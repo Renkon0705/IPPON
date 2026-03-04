@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>面白い投票</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+<style>
+body {
+  background: #111;
+  color: white;
+  text-align: center;
+  font-family: sans-serif;
+  margin-top: 100px;
+}
+button {
+  font-size: 30px;
+  padding: 20px 40px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<h1>面白い！</h1>
+<button onclick="vote()">🔥 押す 🔥</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
+  authDomain: "ipponsystem-245b4.firebaseapp.com",
+  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ipponsystem-245b4",
+  storageBucket: "ipponsystem-245b4.firebasestorage.app",
+  messagingSenderId: "1096087322754",
+  appId: "1:1096087322754:web:cd18fd1386d05e5c1df49b",
+  measurementId: "G-3FCR2JR8JD"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+window.vote = function() {
+  const voteRef = ref(db, "votes");
+  runTransaction(voteRef, (current) => {
+    return (current || 0) + 1;
+  });
+};
+</script>
+
+</body>
+</html>
