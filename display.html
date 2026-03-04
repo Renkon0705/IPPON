@@ -51,7 +51,16 @@ const voteRef = ref(db, "votes");
 const voteDisplay = document.getElementById("votes");
 const ipponDisplay = document.getElementById("ippon");
 
-const IPPON_THRESHOLD = 5;
+const settingsRef = ref(db, "settings");
+
+let IPPON_THRESHOLD = 5;
+
+onValue(settingsRef, (snapshot) => {
+  const data = snapshot.val();
+  if (data && data.threshold) {
+    IPPON_THRESHOLD = Number(data.threshold);
+  }
+});
 
 onValue(voteRef, (snapshot) => {
   const value = snapshot.val() || 0;
