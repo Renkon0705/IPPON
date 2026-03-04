@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>IPPON設定</title>
+<style>
+body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+select, button { font-size: 18px; padding: 5px 10px; margin: 10px; }
+</style>
+</head>
+<body>
+
+<h1>IPPON システム設定</h1>
+
+<label>参加人数：
+  <select id="playerCount">
+    <option value="4">4人</option>
+    <option value="6">6人</option>
+    <option value="8" selected>8人</option>
+  </select>
+</label>
+<br>
+
+<label>審査人数：
+  <select id="judgeCount">
+    <option value="3">3人</option>
+    <option value="5">5人</option>
+    <option value="7" selected>7人</option>
+  </select>
+</label>
+<br>
+
+<label>何票でIPPON？：
+  <select id="threshold">
+    <option value="3">3票</option>
+    <option value="4">4票</option>
+    <option value="5" selected>5票</option>
+    <option value="6">6票</option>
+    <option value="7">7票</option>
+  </select>
+</label>
+<br>
+
+<button onclick="saveSettings()">保存</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
+  authDomain: "ipponsystem-245b4.firebaseapp.com",
+  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ipponsystem-245b4",
+  storageBucket: "ipponsystem-245b4.firebasestorage.app",
+  messagingSenderId: "1096087322754",
+  appId: "1:1096087322754:web:cd18fd1386d05e5c1df49b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+window.saveSettings = function() {
+  const settings = {
+    playerCount: document.getElementById("playerCount").value,
+    judgeCount: document.getElementById("judgeCount").value,
+    threshold: document.getElementById("threshold").value
+  };
+
+  set(ref(db, "settings"), settings);
+  alert("保存しました！");
+};
+</script>
+
+</body>
+</html>
