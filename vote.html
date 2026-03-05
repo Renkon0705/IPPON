@@ -2,31 +2,45 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>面白い投票</title>
+<title>投票</title>
 <style>
 body {
   background: #111;
   color: white;
   text-align: center;
   font-family: sans-serif;
-  margin-top: 100px;
+  margin-top: 120px;
 }
-button {
-  font-size: 30px;
-  padding: 20px 40px;
+
+/* 黄色い丸ボタン */
+.vote-btn {
+  width: 160px;
+  height: 160px;
+  background: #FFD700;
+  border-radius: 50%;
+  border: none;
   cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  box-shadow: 0 0 30px rgba(255,215,0,0.7);
 }
+
+/* 押したとき */
+.vote-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 0 10px rgba(255,215,0,0.5);
+}
+
 #count {
-  margin-top: 20px;
+  margin-top: 40px;
   font-size: 20px;
+  opacity: 0.8;
 }
 </style>
 </head>
 <body>
 
-<h1>面白い！</h1>
-<button onclick="vote()">🔥 押す 🔥</button>
-<div id="count">あなたの投票：0 / 2</div>
+<button class="vote-btn" onclick="vote()"></button>
+<div id="count">0 / 2</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -49,14 +63,10 @@ let myVotes = 0;
 const maxVotes = 2;
 
 window.vote = function() {
-
-  if (myVotes >= maxVotes) {
-    return; // 3回以上は無効
-  }
+  if (myVotes >= maxVotes) return;
 
   myVotes++;
-  document.getElementById("count").textContent =
-    "あなたの投票：" + myVotes + " / 2";
+  document.getElementById("count").textContent = myVotes + " / 2";
 
   const voteRef = ref(db, "votes");
 
