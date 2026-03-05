@@ -12,7 +12,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* ===== 黄色フレーム ===== */
 #frame {
   position: fixed;
   top: 0;
@@ -20,37 +19,12 @@ body {
   width: 100vw;
   height: 100vh;
   box-sizing: border-box;
-
   border: 0px solid gold;
   transition: border-width 0.3s ease;
 }
 
-/* 段ライン用オーバーレイ */
-#lines {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
+/* ===== IPPON 演出 ===== */
 
-  background-image:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0px,
-      transparent 36px,
-      black 36px,
-      black 40px
-    ),
-    repeating-linear-gradient(
-      to right,
-      transparent 0px,
-      transparent 36px,
-      black 36px,
-      black 40px
-    );
-
-  display: none;
-}
-
-/* ===== IPPON演出 ===== */
 #ipponWrapper {
   position: fixed;
   top: 50%;
@@ -88,7 +62,6 @@ body {
 <body>
 
 <div id="frame"></div>
-<div id="lines"></div>
 
 <div id="ipponWrapper">
   <div id="ipponBoard">
@@ -117,11 +90,11 @@ const voteRef = ref(db, "votes");
 const settingsRef = ref(db, "settings");
 
 const frame = document.getElementById("frame");
-const lines = document.getElementById("lines");
 const ipponDisplay = document.getElementById("ipponWrapper");
 
 let IPPON_THRESHOLD = 5;
 
+/* 設定取得 */
 onValue(settingsRef, (snapshot) => {
   const data = snapshot.val();
   if (data && data.threshold) {
@@ -129,14 +102,15 @@ onValue(settingsRef, (snapshot) => {
   }
 });
 
+/* 最大border計算（画面完全埋め用） */
 function getMaxBorder() {
   const w = window.innerWidth;
   const h = window.innerHeight;
   return Math.min(w, h) / 2;
 }
 
+/* 票監視 */
 onValue(voteRef, (snapshot) => {
-
   const value = snapshot.val() || 0;
 
   const maxBorder = getMaxBorder();
@@ -144,24 +118,16 @@ onValue(voteRef, (snapshot) => {
 
   frame.style.borderWidth = borderSize + "px";
 
-  // 枠が出てる間だけ段ライン表示
-  if (borderSize > 0) {
-    lines.style.display = "block";
-  } else {
-    lines.style.display = "none";
-  }
-
   if (value >= IPPON_THRESHOLD) {
 
     ipponDisplay.style.display = "block";
     ipponDisplay.style.animation = "none";
-    void ipponDisplay.offsetWidth;
+    void ipponDisplay.offsetWidth; // アニメ再実行用
     ipponDisplay.style.animation = "pop 0.3s ease forwards";
 
     setTimeout(() => {
       ipponDisplay.style.display = "none";
       frame.style.borderWidth = "0px";
-      lines.style.display = "none";
       set(voteRef, 0);
     }, 3000);
   }
