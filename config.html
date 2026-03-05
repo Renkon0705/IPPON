@@ -13,31 +13,17 @@ select, button { font-size: 18px; padding: 5px 10px; margin: 10px; }
 <h1>IPPON システム設定</h1>
 
 <label>参加人数：
-  <select id="playerCount">
-    <option value="4">4人</option>
-    <option value="6">6人</option>
-    <option value="8" selected>8人</option>
-  </select>
+  <select id="playerCount"></select>
 </label>
 <br>
 
 <label>審査人数：
-  <select id="judgeCount">
-    <option value="3">3人</option>
-    <option value="5">5人</option>
-    <option value="7" selected>7人</option>
-  </select>
+  <select id="judgeCount"></select>
 </label>
 <br>
 
 <label>何票でIPPON？：
-  <select id="threshold">
-    <option value="3">3票</option>
-    <option value="4">4票</option>
-    <option value="5" selected>5票</option>
-    <option value="6">6票</option>
-    <option value="7">7票</option>
-  </select>
+  <select id="threshold"></select>
 </label>
 <br>
 
@@ -60,11 +46,37 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// 参加人数・審査人数 1〜10
+function createOptions(selectId, max) {
+  const select = document.getElementById(selectId);
+  for (let i = 1; i <= max; i++) {
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = i + "人";
+    select.appendChild(option);
+  }
+}
+
+// IPPON基準 1〜20
+function createThresholdOptions() {
+  const select = document.getElementById("threshold");
+  for (let i = 1; i <= 20; i++) {
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = i + "票";
+    select.appendChild(option);
+  }
+}
+
+createOptions("playerCount", 10);
+createOptions("judgeCount", 10);
+createThresholdOptions();
+
 window.saveSettings = function() {
   const settings = {
-    playerCount: document.getElementById("playerCount").value,
-    judgeCount: document.getElementById("judgeCount").value,
-    threshold: document.getElementById("threshold").value
+    playerCount: Number(document.getElementById("playerCount").value),
+    judgeCount: Number(document.getElementById("judgeCount").value),
+    threshold: Number(document.getElementById("threshold").value)
   };
 
   set(ref(db, "settings"), settings);
