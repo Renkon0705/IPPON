@@ -15,8 +15,8 @@ body {
 }
 
 .voteButton {
-  width: 60px;
-  height: 60px;
+  width: 70px;
+  height: 70px;
   background: yellow;
   border-radius: 50%;
   margin: 0 auto;
@@ -32,7 +32,6 @@ body {
 #resetVotesButton {
   margin-top: 40px;
   padding: 8px 20px;
-  font-size: 14px;
   border: none;
   border-radius: 6px;
   background: #444;
@@ -46,30 +45,27 @@ body {
 
 <h2>投票</h2>
 
-<div class="voteButton" id="voteButton" data-votes="0"></div>
+<div class="voteButton" id="voteButton"></div>
 
 <button id="resetVotesButton">リセット</button>
 
 <script>
 
+let votes = 0;
 const button = document.getElementById("voteButton");
 
-// 最大2票
 button.addEventListener("click", () => {
-  let votes = parseInt(button.dataset.votes);
 
-  if (votes < 2) {
-    votes++;
-    button.dataset.votes = votes;
+  if (votes >= 2) return;   // ← ここで完全ブロック
 
-    if (votes === 1) button.style.opacity = "0.5";
-    if (votes === 2) button.style.opacity = "1";
-  }
+  votes++;
+
+  if (votes === 1) button.style.opacity = "0.6";
+  if (votes === 2) button.style.opacity = "1";
 });
 
-// リセット
 document.getElementById("resetVotesButton").addEventListener("click", () => {
-  button.dataset.votes = 0;
+  votes = 0;
   button.style.opacity = "1";
 });
 
