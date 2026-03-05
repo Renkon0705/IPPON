@@ -49,26 +49,50 @@ body {
 
 <button id="resetVotesButton">リセット</button>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, runTransaction, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-let votes = 0;
+const firebaseConfig = {
+  apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
+  authDomain: "ipponsystem-245b4.firebaseapp.com",
+  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ipponsystem-245b4",
+  storageBucket: "ipponsystem-245b4.firebasestorage.app",
+  messagingSenderId: "1096087322754",
+  appId: "1:1096087322754:web:cd18fd1386d05e5c1df49b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const voteRef = ref(db, "votes");
+
+let localVotes = 0;
 const button = document.getElementById("voteButton");
 
+// 🔥 2回まで + Firebase送信
 button.addEventListener("click", () => {
 
-  if (votes >= 2) return;   // ← ここで完全ブロック
+  if (localVotes >= 2) return;
 
-  votes++;
+  localVotes++;
 
-  if (votes === 1) button.style.opacity = "0.6";
-  if (votes === 2) button.style.opacity = "1";
+  // 見た目変化
+  if (localVotes === 1) button.style.opacity = "0.6";
+  if (localVotes === 2) button.style.opacity = "1";
+
+  // 🔥 Firebaseの票を+1（安全な加算）
+  runTransaction(voteRef, (current) => {
+    return (current || 0) + 1;
+  });
+
 });
 
+// リセット（この端末だけ）
 document.getElementById("resetVotesButton").addEventListener("click", () => {
-  votes = 0;
+  localVotes = 0;
   button.style.opacity = "1";
 });
-
 </script>
 
 </body>
