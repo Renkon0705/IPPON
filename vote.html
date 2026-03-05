@@ -2,78 +2,106 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>投票</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>投票システム</title>
+
 <style>
 body {
   background: #111;
   color: white;
   text-align: center;
   font-family: sans-serif;
-  margin-top: 120px;
 }
 
-/* 黄色い丸ボタン */
-.vote-btn {
-  width: 160px;
-  height: 160px;
-  background: #FFD700;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-  box-shadow: 0 0 30px rgba(255,215,0,0.7);
-}
-
-/* 押したとき */
-.vote-btn:active {
-  transform: scale(0.95);
-  box-shadow: 0 0 10px rgba(255,215,0,0.5);
-}
-
-#count {
+.voteArea {
   margin-top: 40px;
-  font-size: 20px;
-  opacity: 0.8;
+}
+
+.voteButton {
+  width: 60px;
+  height: 60px;
+  background: gold;
+  border-radius: 50%;
+  display: inline-block;
+  margin: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.voteButton:hover {
+  transform: scale(1.1);
+}
+
+#resetVotesButton {
+  margin-top: 30px;
+  padding: 10px 25px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: #444;
+  color: white;
+  cursor: pointer;
+}
+
+#resetVotesButton:hover {
+  background: #666;
 }
 </style>
 </head>
+
 <body>
 
-<button class="vote-btn" onclick="vote()"></button>
-<div id="count">0 / 2</div>
+<h2>投票</h2>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+<div class="voteArea">
+  <div class="voteButton" data-votes="0"></div>
+  <div class="voteButton" data-votes="0"></div>
+  <div class="voteButton" data-votes="0"></div>
+  <div class="voteButton" data-votes="0"></div>
+  <div class="voteButton" data-votes="0"></div>
+</div>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
-  authDomain: "ipponsystem-245b4.firebaseapp.com",
-  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "ipponsystem-245b4",
-  storageBucket: "ipponsystem-245b4.firebasestorage.app",
-  messagingSenderId: "1096087322754",
-  appId: "1:1096087322754:web:cd18fd1386d05e5c1df49b"
-};
+<button id="resetVotesButton">リセット</button>
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+<script>
 
-let myVotes = 0;
-const maxVotes = 2;
+// 黄色丸ボタン処理
+const voteButtons = document.querySelectorAll(".voteButton");
 
-window.vote = function() {
-  if (myVotes >= maxVotes) return;
+voteButtons.forEach(button => {
 
-  myVotes++;
-  document.getElementById("count").textContent = myVotes + " / 2";
+  button.addEventListener("click", () => {
 
-  const voteRef = ref(db, "votes");
+    let votes = parseInt(button.dataset.votes);
 
-  runTransaction(voteRef, (current) => {
-    return (current || 0) + 1;
+    // 最大2票まで
+    if (votes < 2) {
+      votes++;
+      button.dataset.votes = votes;
+
+      // 押した回数で濃さ変更
+      if (votes === 1) {
+        button.style.opacity = "0.6";
+      }
+      if (votes === 2) {
+        button.style.opacity = "1";
+      }
+    }
+
   });
-};
+
+});
+
+// リセット処理
+document.getElementById("resetVotesButton").addEventListener("click", () => {
+
+  voteButtons.forEach(button => {
+    button.dataset.votes = 0;
+    button.style.opacity = "1";
+  });
+
+});
+
 </script>
 
 </body>
