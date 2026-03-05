@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>IPPON表示</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+
 <style>
 body {
   background: black;
@@ -12,21 +11,41 @@ body {
   text-align: center;
   font-family: sans-serif;
 }
-#votes {
-  font-size: 80px;
-  margin-top: 100px;
+
+#frameContainer {
+  margin-top: 150px;
 }
+
+.ipponFrame {
+  display: inline-block;
+  width: 80px;
+  height: 80px;
+  margin: 10px;
+  border: 5px solid gold;
+  background: transparent;
+  opacity: 0.2;
+  transition: 0.3s;
+}
+
+.filled {
+  background: gold;
+  opacity: 1;
+}
+
 #ippon {
   font-size: 120px;
   color: gold;
   display: none;
+  margin-top: 50px;
 }
 </style>
 </head>
 <body>
 
 <h1>現在の票</h1>
-<div id="votes">0</div>
+
+<div id="frameContainer"></div>
+
 <div id="ippon">🏆 IPPON！</div>
 
 <script type="module">
@@ -40,31 +59,51 @@ const firebaseConfig = {
   projectId: "ipponsystem-245b4",
   storageBucket: "ipponsystem-245b4.firebasestorage.app",
   messagingSenderId: "1096087322754",
-  appId: "1:1096087322754:web:cd18fd1386d05e5c1df49b",
-  measurementId: "G-3FCR2JR8JD"
+  appId: "1:1096087322754:web:cd18fd1386d05e5c1df49b"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const voteRef = ref(db, "votes");
-const voteDisplay = document.getElementById("votes");
-const ipponDisplay = document.getElementById("ippon");
-
 const settingsRef = ref(db, "settings");
+
+const container = document.getElementById("frameContainer");
+const ipponDisplay = document.getElementById("ippon");
 
 let IPPON_THRESHOLD = 5;
 
+// 設定読み込み
 onValue(settingsRef, (snapshot) => {
   const data = snapshot.val();
   if (data && data.threshold) {
     IPPON_THRESHOLD = Number(data.threshold);
+    createFrames(IPPON_THRESHOLD);
   }
 });
 
+// 枠を生成
+function createFrames(count) {
+  container.innerHTML = "";
+  for (let i = 0; i < count; i++) {
+    const frame = document.createElement("div");
+    frame.classList.add("ipponFrame");
+    container.appendChild(frame);
+  }
+}
+
+// 票監視
 onValue(voteRef, (snapshot) => {
   const value = snapshot.val() || 0;
-  voteDisplay.textContent = value;
+  const frames = document.querySelectorAll(".ipponFrame");
+
+  frames.forEach((frame, index) => {
+    if (index < value) {
+      frame.classList.add("filled");
+    } else {
+      frame.classList.remove("filled");
+    }
+  });
 
   if (value >= IPPON_THRESHOLD) {
     ipponDisplay.style.display = "block";
