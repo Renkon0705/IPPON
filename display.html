@@ -9,7 +9,7 @@ body {
   margin: 0;
   background: black;
   overflow: hidden;
-  font-family: sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 #frame {
@@ -23,21 +23,51 @@ body {
   transition: border-width 0.3s ease;
 }
 
-#ippon {
+/* ===== IPPON 演出 ===== */
+
+#ipponWrapper {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 120px;
-  color: gold;
+  transform: translate(-50%, -50%) scale(0.5);
   display: none;
+  animation: pop 0.3s ease forwards;
+}
+
+#ipponBoard {
+  background: black;
+  padding: 40px 120px;
+  border-radius: 10px;
+  box-shadow: 0 0 40px gold;
+}
+
+#ipponText {
+  font-size: 140px;
+  font-weight: 900;
+  color: #ffe600;
+  letter-spacing: 10px;
+  text-shadow:
+    0 4px 0 #c9a800,
+    0 8px 20px rgba(0,0,0,0.8);
+}
+
+@keyframes pop {
+  to {
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 </style>
 </head>
+
 <body>
 
 <div id="frame"></div>
-<div id="ippon">🏆 IPPON！</div>
+
+<div id="ipponWrapper">
+  <div id="ipponBoard">
+    <div id="ipponText">IPPON</div>
+  </div>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -60,11 +90,11 @@ const voteRef = ref(db, "votes");
 const settingsRef = ref(db, "settings");
 
 const frame = document.getElementById("frame");
-const ipponDisplay = document.getElementById("ippon");
+const ipponDisplay = document.getElementById("ipponWrapper");
 
 let IPPON_THRESHOLD = 5;
 
-// 設定取得
+/* 設定取得 */
 onValue(settingsRef, (snapshot) => {
   const data = snapshot.val();
   if (data && data.threshold) {
@@ -72,14 +102,14 @@ onValue(settingsRef, (snapshot) => {
   }
 });
 
-// 画面に対して完全に埋まる最大borderを計算
+/* 最大border計算（画面完全埋め用） */
 function getMaxBorder() {
   const w = window.innerWidth;
   const h = window.innerHeight;
   return Math.min(w, h) / 2;
 }
 
-// 票監視
+/* 票監視 */
 onValue(voteRef, (snapshot) => {
   const value = snapshot.val() || 0;
 
@@ -89,7 +119,11 @@ onValue(voteRef, (snapshot) => {
   frame.style.borderWidth = borderSize + "px";
 
   if (value >= IPPON_THRESHOLD) {
+
     ipponDisplay.style.display = "block";
+    ipponDisplay.style.animation = "none";
+    void ipponDisplay.offsetWidth; // アニメ再実行用
+    ipponDisplay.style.animation = "pop 0.3s ease forwards";
 
     setTimeout(() => {
       ipponDisplay.style.display = "none";
