@@ -12,6 +12,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* ===== 迫る黄色フレーム ===== */
 #frame {
   position: fixed;
   top: 0;
@@ -19,15 +20,21 @@ body {
   width: 100vw;
   height: 100vh;
   box-sizing: border-box;
-  border: 0px solid gold;
+
+  border: 0px solid transparent;
   transition: border-width 0.3s ease;
 
-  /* ← 黄色枠の内側に細い黒ライン */
-  box-shadow: 0 0 0 4px black inset;
+  /* 段＋黒ライン（本家風） */
+  border-image: repeating-linear-gradient(
+    to bottom,
+    #ffd700 0px,
+    #ffd700 40px,
+    #000000 40px,
+    #000000 44px
+  ) 1;
 }
 
-/* ===== IPPON 演出 ===== */
-
+/* ===== IPPON演出 ===== */
 #ipponWrapper {
   position: fixed;
   top: 50%;
@@ -105,7 +112,7 @@ onValue(settingsRef, (snapshot) => {
   }
 });
 
-/* 最大border計算（完全埋まり用） */
+/* 最大border計算（画面完全埋まり用） */
 function getMaxBorder() {
   const w = window.innerWidth;
   const h = window.innerHeight;
