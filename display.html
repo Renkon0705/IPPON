@@ -72,11 +72,18 @@ onValue(settingsRef, (snapshot) => {
   }
 });
 
+// 画面に対して完全に埋まる最大borderを計算
+function getMaxBorder() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  return Math.min(w, h) / 2;
+}
+
 // 票監視
 onValue(voteRef, (snapshot) => {
   const value = snapshot.val() || 0;
 
-  const maxBorder = 200; // 最大枠の太さ（演出強さ）
+  const maxBorder = getMaxBorder();
   const borderSize = (value / IPPON_THRESHOLD) * maxBorder;
 
   frame.style.borderWidth = borderSize + "px";
