@@ -12,15 +12,21 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.layer {
+#frame {
   position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   box-sizing: border-box;
-  border: 4px solid black; /* ← 黒アウトライン */
-  background: gold;
-  pointer-events: none;
+  border: 0px solid gold;
+  transition: border-width 0.3s ease;
+
+  /* ← 黄色枠の内側に細い黒ライン */
+  box-shadow: 0 0 0 4px black inset;
 }
 
-/* ===== IPPON演出 ===== */
+/* ===== IPPON 演出 ===== */
 
 #ipponWrapper {
   position: fixed;
@@ -58,6 +64,8 @@ body {
 
 <body>
 
+<div id="frame"></div>
+
 <div id="ipponWrapper">
   <div id="ipponBoard">
     <div id="ipponText">IPPON</div>
@@ -84,10 +92,12 @@ const db = getDatabase(app);
 const voteRef = ref(db, "votes");
 const settingsRef = ref(db, "settings");
 
+const frame = document.getElementById("frame");
 const ipponDisplay = document.getElementById("ipponWrapper");
 
 let IPPON_THRESHOLD = 5;
 
+/* 設定取得 */
 onValue(settingsRef, (snapshot) => {
   const data = snapshot.val();
   if (data && data.threshold) {
@@ -95,29 +105,11 @@ onValue(settingsRef, (snapshot) => {
   }
 });
 
-/* レイヤー描画 */
-function renderLayers(votes) {
-
-  // 既存削除
-  document.querySelectorAll(".layer").forEach(el => el.remove());
-
-  const maxSize = Math.min(window.innerWidth, window.innerHeight) / 2;
-  const step = maxSize / IPPON_THRESHOLD;
-
-  for (let i = 0; i < votes; i++) {
-
-    const size = step * (i + 1);
-
-    const div = document.createElement("div");
-    div.className = "layer";
-
-    div.style.top = size + "px";
-    div.style.left = size + "px";
-    div.style.right = size + "px";
-    div.style.bottom = size + "px";
-
-    document.body.appendChild(div);
-  }
+/* 最大border計算（完全埋まり用） */
+function getMaxBorder() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  return Math.min(w, h) / 2;
 }
 
 /* 投票監視 */
@@ -125,7 +117,10 @@ onValue(voteRef, (snapshot) => {
 
   const value = snapshot.val() || 0;
 
-  renderLayers(value);
+  const maxBorder = getMaxBorder();
+  const borderSize = (value / IPPON_THRESHOLD) * maxBorder;
+
+  frame.style.borderWidth = borderSize + "px";
 
   if (value >= IPPON_THRESHOLD) {
 
@@ -136,7 +131,7 @@ onValue(voteRef, (snapshot) => {
 
     setTimeout(() => {
       ipponDisplay.style.display = "none";
-      document.querySelectorAll(".layer").forEach(el => el.remove());
+      frame.style.borderWidth = "0px";
       set(voteRef, 0);
     }, 3000);
   }
