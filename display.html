@@ -12,18 +12,15 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-#frame {
+.layer {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
   box-sizing: border-box;
-  border: 0px solid gold;
-  transition: border-width 0.3s ease;
+  border: 4px solid black; /* ← 黒アウトライン */
+  background: gold;
+  pointer-events: none;
 }
 
-/* ===== IPPON 演出 ===== */
+/* ===== IPPON演出 ===== */
 
 #ipponWrapper {
   position: fixed;
@@ -61,8 +58,6 @@ body {
 
 <body>
 
-<div id="frame"></div>
-
 <div id="ipponWrapper">
   <div id="ipponBoard">
     <div id="ipponText">IPPON</div>
@@ -89,12 +84,10 @@ const db = getDatabase(app);
 const voteRef = ref(db, "votes");
 const settingsRef = ref(db, "settings");
 
-const frame = document.getElementById("frame");
 const ipponDisplay = document.getElementById("ipponWrapper");
 
 let IPPON_THRESHOLD = 5;
 
-/* 設定取得 */
 onValue(settingsRef, (snapshot) => {
   const data = snapshot.val();
   if (data && data.threshold) {
@@ -102,32 +95,48 @@ onValue(settingsRef, (snapshot) => {
   }
 });
 
-/* 最大border計算（画面完全埋め用） */
-function getMaxBorder() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  return Math.min(w, h) / 2;
+/* レイヤー描画 */
+function renderLayers(votes) {
+
+  // 既存削除
+  document.querySelectorAll(".layer").forEach(el => el.remove());
+
+  const maxSize = Math.min(window.innerWidth, window.innerHeight) / 2;
+  const step = maxSize / IPPON_THRESHOLD;
+
+  for (let i = 0; i < votes; i++) {
+
+    const size = step * (i + 1);
+
+    const div = document.createElement("div");
+    div.className = "layer";
+
+    div.style.top = size + "px";
+    div.style.left = size + "px";
+    div.style.right = size + "px";
+    div.style.bottom = size + "px";
+
+    document.body.appendChild(div);
+  }
 }
 
-/* 票監視 */
+/* 投票監視 */
 onValue(voteRef, (snapshot) => {
+
   const value = snapshot.val() || 0;
 
-  const maxBorder = getMaxBorder();
-  const borderSize = (value / IPPON_THRESHOLD) * maxBorder;
-
-  frame.style.borderWidth = borderSize + "px";
+  renderLayers(value);
 
   if (value >= IPPON_THRESHOLD) {
 
     ipponDisplay.style.display = "block";
     ipponDisplay.style.animation = "none";
-    void ipponDisplay.offsetWidth; // アニメ再実行用
+    void ipponDisplay.offsetWidth;
     ipponDisplay.style.animation = "pop 0.3s ease forwards";
 
     setTimeout(() => {
       ipponDisplay.style.display = "none";
-      frame.style.borderWidth = "0px";
+      document.querySelectorAll(".layer").forEach(el => el.remove());
       set(voteRef, 0);
     }, 3000);
   }
