@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>投票システム</title>
+<title>投票</title>
 
 <style>
 body {
@@ -11,40 +11,33 @@ body {
   color: white;
   text-align: center;
   font-family: sans-serif;
-}
-
-.voteArea {
-  margin-top: 40px;
+  margin-top: 100px;
 }
 
 .voteButton {
   width: 60px;
   height: 60px;
-  background: gold;
+  background: yellow;
   border-radius: 50%;
-  display: inline-block;
-  margin: 15px;
+  margin: 0 auto;
   cursor: pointer;
-  transition: 0.2s;
+  box-shadow: 0 0 10px rgba(255,255,0,0.6);
+  transition: 0.15s;
 }
 
-.voteButton:hover {
-  transform: scale(1.1);
+.voteButton:active {
+  transform: scale(0.9);
 }
 
 #resetVotesButton {
-  margin-top: 30px;
-  padding: 10px 25px;
-  font-size: 16px;
+  margin-top: 40px;
+  padding: 8px 20px;
+  font-size: 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #444;
   color: white;
   cursor: pointer;
-}
-
-#resetVotesButton:hover {
-  background: #666;
 }
 </style>
 </head>
@@ -53,53 +46,31 @@ body {
 
 <h2>投票</h2>
 
-<div class="voteArea">
-  <div class="voteButton" data-votes="0"></div>
-  <div class="voteButton" data-votes="0"></div>
-  <div class="voteButton" data-votes="0"></div>
-  <div class="voteButton" data-votes="0"></div>
-  <div class="voteButton" data-votes="0"></div>
-</div>
+<div class="voteButton" id="voteButton" data-votes="0"></div>
 
 <button id="resetVotesButton">リセット</button>
 
 <script>
 
-// 黄色丸ボタン処理
-const voteButtons = document.querySelectorAll(".voteButton");
+const button = document.getElementById("voteButton");
 
-voteButtons.forEach(button => {
+// 最大2票
+button.addEventListener("click", () => {
+  let votes = parseInt(button.dataset.votes);
 
-  button.addEventListener("click", () => {
+  if (votes < 2) {
+    votes++;
+    button.dataset.votes = votes;
 
-    let votes = parseInt(button.dataset.votes);
-
-    // 最大2票まで
-    if (votes < 2) {
-      votes++;
-      button.dataset.votes = votes;
-
-      // 押した回数で濃さ変更
-      if (votes === 1) {
-        button.style.opacity = "0.6";
-      }
-      if (votes === 2) {
-        button.style.opacity = "1";
-      }
-    }
-
-  });
-
+    if (votes === 1) button.style.opacity = "0.5";
+    if (votes === 2) button.style.opacity = "1";
+  }
 });
 
-// リセット処理
+// リセット
 document.getElementById("resetVotesButton").addEventListener("click", () => {
-
-  voteButtons.forEach(button => {
-    button.dataset.votes = 0;
-    button.style.opacity = "1";
-  });
-
+  button.dataset.votes = 0;
+  button.style.opacity = "1";
 });
 
 </script>
