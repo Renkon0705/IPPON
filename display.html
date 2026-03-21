@@ -18,11 +18,12 @@ body {
   height: 100%;
 }
 
-/* 枠1本 */
+/* 枠1本（太さアップ＆影で立体感） */
 .frameStep {
   position: absolute;
-  border: 6px solid gold;
+  border: 10px solid #ffe600;
   box-sizing: border-box;
+  box-shadow: 0 0 10px rgba(255, 230, 0, 0.6);
 }
 
 /* IPPON */
@@ -69,7 +70,6 @@ body {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-/* ←ここ絶対そのまま使う */
 const firebaseConfig = {
   apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
   authDomain: "ipponsystem-245b4.firebaseapp.com",
@@ -84,12 +84,21 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const voteRef = ref(db, "votes");
+const settingsRef = ref(db, "settings");
 
 const container = document.getElementById("frameContainer");
 const ipponDisplay = document.getElementById("ipponWrapper");
 
 let lastValue = 0;
 let IPPON_THRESHOLD = 5;
+
+/* ===== ① threshold取得 ===== */
+onValue(settingsRef, (snapshot) => {
+  const data = snapshot.val();
+  if (data && data.threshold) {
+    IPPON_THRESHOLD = Number(data.threshold);
+  }
+});
 
 /* ===== 音 ===== */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -115,15 +124,24 @@ function playSuccess() {
   });
 }
 
-/* 枠描画 */
+/* ===== ② 枠間隔を自動調整 ===== */
 function drawFrames(count) {
   container.innerHTML = "";
+
+  if (count === 0) return;
+
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const max = Math.min(w, h) / 2;
+
+  // IPPON時にピッタリ中央まで行くように計算
+  const step = max / IPPON_THRESHOLD;
 
   for (let i = 0; i < count; i++) {
     const div = document.createElement("div");
     div.className = "frameStep";
 
-    const m = i * 20;
+    const m = i * step;
 
     div.style.top = m + "px";
     div.style.left = m + "px";
@@ -134,7 +152,7 @@ function drawFrames(count) {
   }
 }
 
-/* 監視 */
+/* ===== 監視 ===== */
 onValue(voteRef, (snapshot) => {
   const value = snapshot.val() || 0;
 
