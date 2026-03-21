@@ -23,8 +23,6 @@ body {
   transition: border-width 0.3s ease;
 }
 
-/* ===== IPPON 演出 ===== */
-
 #ipponWrapper {
   position: fixed;
   top: 50%;
@@ -93,6 +91,37 @@ const frame = document.getElementById("frame");
 const ipponDisplay = document.getElementById("ipponWrapper");
 
 let IPPON_THRESHOLD = 5;
+let lastValue = 0;
+
+/* ===== 音の準備 ===== */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// 音階（だんだん上がる）
+const scale = [523, 587, 659, 698, 784, 880, 988, 1046]; // ドレミファソラシド
+
+function playTone(freq, duration = 0.15) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.frequency.value = freq;
+  osc.type = "square";
+
+  gain.gain.value = 0.2;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+// IPPON成功音（ちょい豪華）
+function playSuccess() {
+  const notes = [784, 988, 1318]; // ソ→シ→ミ（っぽい）
+  notes.forEach((f, i) => {
+    setTimeout(() => playTone(f, 0.2), i * 120);
+  });
+}
 
 /* 設定取得 */
 onValue(settingsRef, (snapshot) => {
@@ -102,7 +131,7 @@ onValue(settingsRef, (snapshot) => {
   }
 });
 
-/* 最大border計算（画面完全埋め用） */
+/* 最大border */
 function getMaxBorder() {
   const w = window.innerWidth;
   const h = window.innerHeight;
@@ -118,11 +147,20 @@ onValue(voteRef, (snapshot) => {
 
   frame.style.borderWidth = borderSize + "px";
 
+  /* ===== 票が増えた時だけ音 ===== */
+  if (value > lastValue) {
+    const index = Math.min(value - 1, scale.length - 1);
+    playTone(scale[index]);
+  }
+
+  /* ===== IPPON ===== */
   if (value >= IPPON_THRESHOLD) {
+
+    playSuccess(); // 成功音
 
     ipponDisplay.style.display = "block";
     ipponDisplay.style.animation = "none";
-    void ipponDisplay.offsetWidth; // アニメ再実行用
+    void ipponDisplay.offsetWidth;
     ipponDisplay.style.animation = "pop 0.3s ease forwards";
 
     setTimeout(() => {
@@ -131,6 +169,8 @@ onValue(voteRef, (snapshot) => {
       set(voteRef, 0);
     }, 3000);
   }
+
+  lastValue = value;
 });
 </script>
 
