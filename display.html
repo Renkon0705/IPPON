@@ -11,19 +11,30 @@ body {
   overflow: hidden;
 }
 
-/* 枠コンテナ */
+/* コンテナ */
 #frameContainer {
   position: fixed;
   width: 100%;
   height: 100%;
 }
 
-/* 枠1本（太さアップ＆影で立体感） */
+/* 八角形フレーム */
 .frameStep {
   position: absolute;
-  border: 30px solid #ffe600;
   box-sizing: border-box;
-  box-shadow: 0 0 10px rgba(255, 230, 0, 0.6);
+  border: 30px solid #ffe600;
+
+  /* 八角形 */
+  clip-path: polygon(
+    10% 0%, 90% 0%,
+    100% 10%, 100% 90%,
+    90% 100%, 10% 100%,
+    0% 90%, 0% 10%
+  );
+
+  box-shadow:
+    0 0 12px rgba(255,230,0,0.7),
+    inset 0 0 8px rgba(255,255,255,0.3);
 }
 
 /* IPPON */
@@ -92,7 +103,7 @@ const ipponDisplay = document.getElementById("ipponWrapper");
 let lastValue = 0;
 let IPPON_THRESHOLD = 5;
 
-/* ===== ① threshold取得 ===== */
+/* threshold取得 */
 onValue(settingsRef, (snapshot) => {
   const data = snapshot.val();
   if (data && data.threshold) {
@@ -100,31 +111,7 @@ onValue(settingsRef, (snapshot) => {
   }
 });
 
-/* ===== 音 ===== */
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-const scale = [523, 587, 659, 698, 784, 880, 988, 1046];
-
-function playTone(freq) {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-
-  osc.frequency.value = freq;
-  gain.gain.value = 0.2;
-
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.15);
-}
-
-function playSuccess() {
-  [784, 988, 1318].forEach((f, i) => {
-    setTimeout(() => playTone(f), i * 120);
-  });
-}
-
-/* ===== ② 枠間隔を自動調整 ===== */
+/* 枠描画 */
 function drawFrames(count) {
   container.innerHTML = "";
 
@@ -134,7 +121,6 @@ function drawFrames(count) {
   const h = window.innerHeight;
   const max = Math.min(w, h) / 2;
 
-  // IPPON時にピッタリ中央まで行くように計算
   const step = max / IPPON_THRESHOLD;
 
   for (let i = 0; i < count; i++) {
@@ -152,20 +138,13 @@ function drawFrames(count) {
   }
 }
 
-/* ===== 監視 ===== */
+/* 監視 */
 onValue(voteRef, (snapshot) => {
   const value = snapshot.val() || 0;
 
   drawFrames(value);
 
-  if (value > lastValue) {
-    playTone(scale[Math.min(value - 1, scale.length - 1)]);
-  }
-
   if (value >= IPPON_THRESHOLD) {
-
-    playSuccess();
-
     ipponDisplay.style.display = "block";
 
     setTimeout(() => {
@@ -174,8 +153,6 @@ onValue(voteRef, (snapshot) => {
       set(voteRef, 0);
     }, 3000);
   }
-
-  lastValue = value;
 });
 </script>
 
