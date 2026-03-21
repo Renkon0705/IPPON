@@ -9,20 +9,26 @@ body {
   margin: 0;
   background: black;
   overflow: hidden;
-  font-family: Arial, Helvetica, sans-serif;
 }
 
-#frame {
+/* 枠コンテナ */
+#frameContainer {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  box-sizing: border-box;
-  border: 0px solid gold;
-  transition: border-width 0.3s ease;
+  width: 100%;
+  height: 100%;
 }
 
+/* 1本の枠 */
+.frameStep {
+  position: absolute;
+  border: 6px solid gold;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* IPPON */
 #ipponWrapper {
   position: fixed;
   top: 50%;
@@ -44,9 +50,6 @@ body {
   font-weight: 900;
   color: #ffe600;
   letter-spacing: 10px;
-  text-shadow:
-    0 4px 0 #c9a800,
-    0 8px 20px rgba(0,0,0,0.8);
 }
 
 @keyframes pop {
@@ -59,7 +62,7 @@ body {
 
 <body>
 
-<div id="frame"></div>
+<div id="frameContainer"></div>
 
 <div id="ipponWrapper">
   <div id="ipponBoard">
@@ -72,105 +75,57 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
-  authDomain: "ipponsystem-245b4.firebaseapp.com",
-  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "ipponsystem-245b4",
-  storageBucket: "ipponsystem-245b4.firebasestorage.app",
-  messagingSenderId: "1096087322754",
-  appId: "1:1096087322754:web:cd18fd1386d05e5c1df49b"
+  apiKey: "AIza...",
+  authDomain: "...",
+  databaseURL: "...",
+  projectId: "...",
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const voteRef = ref(db, "votes");
-const settingsRef = ref(db, "settings");
 
-const frame = document.getElementById("frame");
+const container = document.getElementById("frameContainer");
 const ipponDisplay = document.getElementById("ipponWrapper");
 
 let IPPON_THRESHOLD = 5;
-let lastValue = 0;
 
-/* ===== 音の準備 ===== */
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+/* 枠を描画 */
+function drawFrames(count) {
+  container.innerHTML = "";
 
-// 音階（だんだん上がる）
-const scale = [523, 587, 659, 698, 784, 880, 988, 1046]; // ドレミファソラシド
+  for (let i = 0; i < count; i++) {
+    const div = document.createElement("div");
+    div.className = "frameStep";
 
-function playTone(freq, duration = 0.15) {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
+    const margin = i * 20;
 
-  osc.frequency.value = freq;
-  osc.type = "square";
+    div.style.top = margin + "px";
+    div.style.left = margin + "px";
+    div.style.right = margin + "px";
+    div.style.bottom = margin + "px";
 
-  gain.gain.value = 0.2;
-
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + duration);
-}
-
-// IPPON成功音（ちょい豪華）
-function playSuccess() {
-  const notes = [784, 988, 1318]; // ソ→シ→ミ（っぽい）
-  notes.forEach((f, i) => {
-    setTimeout(() => playTone(f, 0.2), i * 120);
-  });
-}
-
-/* 設定取得 */
-onValue(settingsRef, (snapshot) => {
-  const data = snapshot.val();
-  if (data && data.threshold) {
-    IPPON_THRESHOLD = Number(data.threshold);
+    container.appendChild(div);
   }
-});
-
-/* 最大border */
-function getMaxBorder() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  return Math.min(w, h) / 2;
 }
 
-/* 票監視 */
+/* 監視 */
 onValue(voteRef, (snapshot) => {
   const value = snapshot.val() || 0;
 
-  const maxBorder = getMaxBorder();
-  const borderSize = (value / IPPON_THRESHOLD) * maxBorder;
+  drawFrames(value);
 
-  frame.style.borderWidth = borderSize + "px";
-
-  /* ===== 票が増えた時だけ音 ===== */
-  if (value > lastValue) {
-    const index = Math.min(value - 1, scale.length - 1);
-    playTone(scale[index]);
-  }
-
-  /* ===== IPPON ===== */
   if (value >= IPPON_THRESHOLD) {
 
-    playSuccess(); // 成功音
-
     ipponDisplay.style.display = "block";
-    ipponDisplay.style.animation = "none";
-    void ipponDisplay.offsetWidth;
-    ipponDisplay.style.animation = "pop 0.3s ease forwards";
 
     setTimeout(() => {
       ipponDisplay.style.display = "none";
-      frame.style.borderWidth = "0px";
+      drawFrames(0);
       set(voteRef, 0);
     }, 3000);
   }
-
-  lastValue = value;
 });
 </script>
 
