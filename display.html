@@ -18,23 +18,41 @@ body {
   height: 100%;
 }
 
-/* 八角形フレーム */
+/* フレーム（外側） */
 .frameStep {
   position: absolute;
-  box-sizing: border-box;
-  border: 30px solid #ffe600;
+}
 
-  /* 八角形 */
+/* 外側 */
+.outer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #ffe600;
+
   clip-path: polygon(
-    10% 0%, 90% 0%,
-    100% 10%, 100% 90%,
-    90% 100%, 10% 100%,
-    0% 90%, 0% 10%
+    15% 0%, 85% 0%,
+    100% 15%, 100% 85%,
+    85% 100%, 15% 100%,
+    0% 85%, 0% 15%
   );
+}
 
-  box-shadow:
-    0 0 12px rgba(255,230,0,0.7),
-    inset 0 0 8px rgba(255,255,255,0.3);
+/* 内側（くり抜き） */
+.inner {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  right: 30px;
+  bottom: 30px;
+  background: black;
+
+  clip-path: polygon(
+    15% 0%, 85% 0%,
+    100% 15%, 100% 85%,
+    85% 100%, 15% 100%,
+    0% 85%, 0% 15%
+  );
 }
 
 /* IPPON */
@@ -103,7 +121,37 @@ const ipponDisplay = document.getElementById("ipponWrapper");
 let lastValue = 0;
 let IPPON_THRESHOLD = 5;
 
-/* threshold取得 */
+/* ===== 音（修正版） ===== */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// 初回クリックで有効化
+document.body.addEventListener("click", () => {
+  audioCtx.resume();
+}, { once: true });
+
+const scale = [523, 587, 659, 698, 784, 880, 988, 1046];
+
+function playTone(freq) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.frequency.value = freq;
+  gain.gain.value = 0.2;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
+}
+
+function playSuccess() {
+  [784, 988, 1318].forEach((f, i) => {
+    setTimeout(() => playTone(f), i * 120);
+  });
+}
+
+/* threshold */
 onValue(settingsRef, (snapshot) => {
   const data = snapshot.val();
   if (data && data.threshold) {
@@ -124,17 +172,26 @@ function drawFrames(count) {
   const step = max / IPPON_THRESHOLD;
 
   for (let i = 0; i < count; i++) {
-    const div = document.createElement("div");
-    div.className = "frameStep";
+    const frame = document.createElement("div");
+    frame.className = "frameStep";
 
     const m = i * step;
 
-    div.style.top = m + "px";
-    div.style.left = m + "px";
-    div.style.right = m + "px";
-    div.style.bottom = m + "px";
+    frame.style.top = m + "px";
+    frame.style.left = m + "px";
+    frame.style.right = m + "px";
+    frame.style.bottom = m + "px";
 
-    container.appendChild(div);
+    const outer = document.createElement("div");
+    outer.className = "outer";
+
+    const inner = document.createElement("div");
+    inner.className = "inner";
+
+    frame.appendChild(outer);
+    frame.appendChild(inner);
+
+    container.appendChild(frame);
   }
 }
 
@@ -144,7 +201,14 @@ onValue(voteRef, (snapshot) => {
 
   drawFrames(value);
 
+  if (value > lastValue) {
+    playTone(scale[Math.min(value - 1, scale.length - 1)]);
+  }
+
   if (value >= IPPON_THRESHOLD) {
+
+    playSuccess();
+
     ipponDisplay.style.display = "block";
 
     setTimeout(() => {
@@ -153,6 +217,8 @@ onValue(voteRef, (snapshot) => {
       set(voteRef, 0);
     }, 3000);
   }
+
+  lastValue = value;
 });
 </script>
 
