@@ -14,18 +14,15 @@ body {
 /* 枠コンテナ */
 #frameContainer {
   position: fixed;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
 }
 
-/* 1本の枠 */
+/* 枠1本 */
 .frameStep {
   position: absolute;
   border: 6px solid gold;
   box-sizing: border-box;
-  pointer-events: none;
 }
 
 /* IPPON */
@@ -41,7 +38,6 @@ body {
 #ipponBoard {
   background: black;
   padding: 40px 120px;
-  border-radius: 10px;
   box-shadow: 0 0 40px gold;
 }
 
@@ -49,7 +45,6 @@ body {
   font-size: 140px;
   font-weight: 900;
   color: #ffe600;
-  letter-spacing: 10px;
 }
 
 @keyframes pop {
@@ -74,11 +69,15 @@ body {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
+/* ←ここ絶対そのまま使う */
 const firebaseConfig = {
-  apiKey: "AIza...",
-  authDomain: "...",
-  databaseURL: "...",
-  projectId: "...",
+  apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
+  authDomain: "ipponsystem-245b4.firebaseapp.com",
+  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ipponsystem-245b4",
+  storageBucket: "ipponsystem-245b4.firebasestorage.app",
+  messagingSenderId: "1096087322754",
+  appId: "1:1096087322754:web:cd18fd1386d05e5c1df49b"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -89,9 +88,34 @@ const voteRef = ref(db, "votes");
 const container = document.getElementById("frameContainer");
 const ipponDisplay = document.getElementById("ipponWrapper");
 
+let lastValue = 0;
 let IPPON_THRESHOLD = 5;
 
-/* 枠を描画 */
+/* ===== 音 ===== */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const scale = [523, 587, 659, 698, 784, 880, 988, 1046];
+
+function playTone(freq) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.frequency.value = freq;
+  gain.gain.value = 0.2;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
+}
+
+function playSuccess() {
+  [784, 988, 1318].forEach((f, i) => {
+    setTimeout(() => playTone(f), i * 120);
+  });
+}
+
+/* 枠描画 */
 function drawFrames(count) {
   container.innerHTML = "";
 
@@ -99,12 +123,12 @@ function drawFrames(count) {
     const div = document.createElement("div");
     div.className = "frameStep";
 
-    const margin = i * 20;
+    const m = i * 20;
 
-    div.style.top = margin + "px";
-    div.style.left = margin + "px";
-    div.style.right = margin + "px";
-    div.style.bottom = margin + "px";
+    div.style.top = m + "px";
+    div.style.left = m + "px";
+    div.style.right = m + "px";
+    div.style.bottom = m + "px";
 
     container.appendChild(div);
   }
@@ -116,7 +140,13 @@ onValue(voteRef, (snapshot) => {
 
   drawFrames(value);
 
+  if (value > lastValue) {
+    playTone(scale[Math.min(value - 1, scale.length - 1)]);
+  }
+
   if (value >= IPPON_THRESHOLD) {
+
+    playSuccess();
 
     ipponDisplay.style.display = "block";
 
@@ -126,6 +156,8 @@ onValue(voteRef, (snapshot) => {
       set(voteRef, 0);
     }, 3000);
   }
+
+  lastValue = value;
 });
 </script>
 
