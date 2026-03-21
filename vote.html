@@ -11,15 +11,15 @@ body {
   color: white;
   text-align: center;
   font-family: sans-serif;
-  margin-top: 120px; /* 少し下げる */
+  margin-top: 120px;
 }
 
 .voteButton {
-  width: 120px;     /* ← 大きく */
-  height: 120px;    /* ← 大きく */
+  width: 120px;
+  height: 120px;
   background: yellow;
   border-radius: 50%;
-  margin: 80px auto 0; /* ← さらに下へ */
+  margin: 80px auto 0;
   cursor: pointer;
   box-shadow: 0 0 20px rgba(255,255,0,0.7);
   transition: 0.15s;
@@ -43,6 +43,18 @@ body {
   color: white;
   cursor: pointer;
 }
+
+/* 全体リセット */
+#resetAllButton {
+  margin-top: 20px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  background: red;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
 </style>
 </head>
 
@@ -54,11 +66,12 @@ body {
 
 <div class="voteButton" id="voteButton"></div>
 
-<button id="resetVotesButton">リセット</button>
+<button id="resetVotesButton">この端末のリセット</button>
+<button id="resetAllButton">IPPONリセット</button>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, runTransaction, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
@@ -79,12 +92,10 @@ let localVotes = 0;
 const button = document.getElementById("voteButton");
 const myVotesDisplay = document.getElementById("myVotes");
 
-// 表示更新関数
 function updateDisplay() {
   myVotesDisplay.textContent = `送信票数：${localVotes} / 2`;
 }
 
-// 2回まで投票
 button.addEventListener("click", () => {
 
   if (localVotes >= 2) return;
@@ -107,8 +118,28 @@ document.getElementById("resetVotesButton").addEventListener("click", () => {
   updateDisplay();
 });
 
-updateDisplay();
+// 🔴 全体リセット（黄色枠リセット）
+document.getElementById("resetAllButton").addEventListener("click", () => {
+  if (confirm("IPPONをリセットする？")) {
+    set(voteRef, 0);
+    localVotes = 0;
+    button.style.opacity = "1";
+    updateDisplay();
+  }
+});
 
+// 🔁 外部リセット検知（表示側ボタン対策）
+onValue(voteRef, (snapshot) => {
+  const value = snapshot.val() || 0;
+
+  if (value === 0) {
+    localVotes = 0;
+    button.style.opacity = "1";
+    updateDisplay();
+  }
+});
+
+updateDisplay();
 </script>
 
 </body>
