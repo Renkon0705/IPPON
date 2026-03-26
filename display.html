@@ -11,7 +11,7 @@ body {
   background: black;
 }
 
-/* ===== 外側の黒枠 ===== */
+/* 外側の黒枠 */
 body::after {
   content: "";
   position: fixed;
@@ -21,7 +21,7 @@ body::after {
   z-index: 100;
 }
 
-/* ===== カメラ ===== */
+/* カメラ */
 #camera {
   position: fixed;
   top: 0;
@@ -33,52 +33,34 @@ body::after {
   filter: brightness(0.85);
 }
 
-/* ===== コンテナ ===== */
+/* コンテナ */
 #frameContainer {
   position: fixed;
   width: 100%;
   height: 100%;
 }
 
-/* ===== フレーム ===== */
+/* ===== フレーム（ここが重要） ===== */
 .frameStep {
   position: absolute;
-}
-
-/* 外側（黄色） */
-.outer {
-  position: absolute;
-  width: 100%;
-  height: 100%;
   background: #ffe600;
 
+  /* 外形 */
   clip-path: polygon(
     15% 0%, 85% 0%,
     100% 15%, 100% 85%,
     85% 100%, 15% 100%,
     0% 85%, 0% 15%
   );
+
+  /* 内側くり抜き */
+  -webkit-mask: 
+    radial-gradient(circle at center, transparent 60%, black 61%);
+  mask: 
+    radial-gradient(circle at center, transparent 60%, black 61%);
 }
 
-/* 内側（くり抜き） */
-.inner {
-  position: absolute;
-  top: 30px;
-  left: 30px;
-  right: 30px;
-  bottom: 30px;
-
-  background: transparent;
-
-  clip-path: polygon(
-    15% 0%, 85% 0%,
-    100% 15%, 100% 85%,
-    85% 100%, 15% 100%,
-    0% 85%, 0% 15%
-  );
-}
-
-/* ===== IPPON表示 ===== */
+/* IPPON */
 #ipponWrapper {
   position: fixed;
   top: 50%;
@@ -125,9 +107,9 @@ body::after {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-/* ===== Firebase ===== */
+/* Firebase */
 const firebaseConfig = {
-  apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
+  apiKey: "AIzaSy...",
   authDomain: "ipponsystem-245b4.firebaseapp.com",
   databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "ipponsystem-245b4",
@@ -148,21 +130,13 @@ const ipponDisplay = document.getElementById("ipponWrapper");
 let lastValue = 0;
 let IPPON_THRESHOLD = 5;
 
-/* ===== カメラ ===== */
+/* カメラ */
 const video = document.getElementById("camera");
 
-navigator.mediaDevices.getUserMedia({
-  video: true,
-  audio: false
-})
-.then(stream => {
-  video.srcObject = stream;
-})
-.catch(err => {
-  console.error("カメラ取得失敗:", err);
-});
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => video.srcObject = stream);
 
-/* ===== 音 ===== */
+/* 音 */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 document.body.addEventListener("click", () => {
@@ -199,11 +173,9 @@ onValue(settingsRef, (snapshot) => {
   }
 });
 
-/* 枠描画 */
+/* 枠 */
 function drawFrames(count) {
   container.innerHTML = "";
-
-  if (count === 0) return;
 
   const w = window.innerWidth;
   const h = window.innerHeight;
@@ -221,15 +193,6 @@ function drawFrames(count) {
     frame.style.left = m + "px";
     frame.style.right = m + "px";
     frame.style.bottom = m + "px";
-
-    const outer = document.createElement("div");
-    outer.className = "outer";
-
-    const inner = document.createElement("div");
-    inner.className = "inner";
-
-    frame.appendChild(outer);
-    frame.appendChild(inner);
 
     container.appendChild(frame);
   }
