@@ -37,42 +37,31 @@ body::after {
   height: 100%;
 }
 
-/* フレーム */
+/* ===== 本物方式：くり抜きフレーム ===== */
 .frameStep {
   position: absolute;
-}
-
-/* 黄色枠 */
-.outer {
-  position: absolute;
-  width: 100%;
-  height: 100%;
   background: #ffe600;
 
+  /* 外形（IPPON形） */
   clip-path: polygon(
     10% 0%, 90% 0%,
     100% 10%, 100% 90%,
     90% 100%, 10% 100%,
     0% 90%, 0% 10%
   );
-}
 
-/* 内側（透明でくり抜き） */
-.inner {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  right: 20px;
-  bottom: 20px;
+  /* 内側をくり抜く（ここが核心） */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
 
-  background: transparent; /* ←ここが超重要 */
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
 
-  clip-path: polygon(
-    10% 0%, 90% 0%,
-    100% 10%, 100% 90%,
-    90% 100%, 10% 100%,
-    0% 90%, 0% 10%
-  );
+  padding: 20px; /* ← 枠の太さ */
 }
 
 /* IPPON */
@@ -122,11 +111,9 @@ body::after {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-/* Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSy...",
-  authDomain: "ipponsystem-245b4.firebaseapp.com",
-  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app",
+  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -146,32 +133,19 @@ navigator.mediaDevices.getUserMedia({ video: true })
   document.getElementById("camera").srcObject = stream;
 });
 
-/* ===== 音（修正版） ===== */
+/* 音 */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+document.body.addEventListener("click", () => audioCtx.resume(), { once: true });
 
-// クリックで有効化
-document.body.addEventListener("click", () => {
-  audioCtx.resume();
-}, { once: true });
-
-function playTone(freq) {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-
-  osc.frequency.value = freq;
-  gain.gain.value = 0.25;
-
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.2);
-}
-
-function playSuccess() {
-  [784, 988, 1318].forEach((f, i) => {
-    setTimeout(() => playTone(f), i * 120);
-  });
+function playTone(f) {
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.frequency.value = f;
+  g.gain.value = 0.25;
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + 0.2);
 }
 
 /* 枠 */
@@ -192,15 +166,6 @@ function drawFrames(count) {
     frame.style.right = offset + "px";
     frame.style.bottom = offset + "px";
 
-    const outer = document.createElement("div");
-    outer.className = "outer";
-
-    const inner = document.createElement("div");
-    inner.className = "inner";
-
-    frame.appendChild(outer);
-    frame.appendChild(inner);
-
     container.appendChild(frame);
   }
 }
@@ -211,13 +176,9 @@ onValue(voteRef, (snapshot) => {
 
   drawFrames(value);
 
-  if (value > lastValue) {
-    playTone(600 + value * 100);
-  }
+  if (value > lastValue) playTone(600 + value * 100);
 
   if (value >= IPPON_THRESHOLD) {
-    playSuccess();
-
     ipponDisplay.style.display = "block";
 
     setTimeout(() => {
