@@ -11,53 +11,61 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;              /* スクロール禁止 */
-  position: fixed;               /* 画面固定 */
-  touch-action: manipulation;    /* ダブルタップ防止 */
+  overflow: hidden;
+  position: fixed;
+  touch-action: manipulation;
   overscroll-behavior: none;
 }
 
 body {
   background: #111;
   color: white;
-  text-align: center;
   font-family: sans-serif;
-  margin-top: 120px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  text-align: center;
 }
 
+/* 投票ボタン */
 .voteButton {
-  width: 210px; /* ← 大きくした */
-  height: 210px;
+  width: 160px;
+  height: 160px;
   background: yellow;
   border-radius: 50%;
-  margin: 80px auto 0;
+  margin: 40px 0;
   cursor: pointer;
   box-shadow: 0 0 30px rgba(255,255,0,0.9);
-  transition: 0.15s;
+  transition: 0.1s;
+  touch-action: manipulation;
 }
 
 .voteButton:active {
   transform: scale(0.9);
 }
 
+/* 表示 */
 #myVotes {
   font-size: 28px;
-  margin-top: 20px;
 }
 
+/* 管理者トグル */
 #adminToggle {
-  margin-top: 20px;
+  margin-top: 10px;
   padding: 8px 16px;
   background: #222;
   border-radius: 20px;
   cursor: pointer;
-  display: inline-block;
 }
 
+/* ボタン */
 #resetVotesButton,
 #resetAllButton {
   display: none;
-  margin-top: 20px;
+  margin-top: 15px;
   padding: 10px 24px;
   border: none;
   border-radius: 6px;
@@ -71,6 +79,18 @@ body {
 
 #resetAllButton {
   background: red;
+}
+
+/* 小さい画面対応 */
+@media (max-height: 600px) {
+  .voteButton {
+    width: 120px;
+    height: 120px;
+  }
+
+  #myVotes {
+    font-size: 20px;
+  }
 }
 </style>
 </head>
@@ -129,7 +149,7 @@ adminToggle.addEventListener("click", () => {
   resetAllButton.style.display = display;
 });
 
-/* 投票 */
+/* 投票（連打OK） */
 button.addEventListener("click", () => {
 
   if (localVotes >= 2) return;
@@ -175,7 +195,7 @@ onValue(voteRef, (snapshot) => {
 
 updateDisplay();
 
-/* ===== ズーム＆スクロール完全防止 ===== */
+/* ===== ズーム防止（連打は邪魔しない） ===== */
 
 // ダブルタップ防止
 let lastTouch = 0;
@@ -192,9 +212,11 @@ document.addEventListener("gesturestart", (e) => {
   e.preventDefault();
 });
 
-// スクロール防止
-document.addEventListener("touchmove", (e) => {
-  e.preventDefault();
+// スクロール防止（ボタン以外）
+document.body.addEventListener("touchmove", (e) => {
+  if (!e.target.closest('.voteButton')) {
+    e.preventDefault();
+  }
 }, { passive: false });
 
 </script>
