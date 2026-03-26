@@ -8,9 +8,20 @@
 body {
   margin: 0;
   overflow: hidden;
+  background: black;
 }
 
-/* カメラ背景 */
+/* ===== 外側の黒枠 ===== */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  border: 20px solid black;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ===== カメラ ===== */
 #camera {
   position: fixed;
   top: 0;
@@ -19,20 +30,22 @@ body {
   height: 100%;
   object-fit: cover;
   z-index: -1;
+  filter: brightness(0.85);
 }
 
-/* コンテナ */
+/* ===== コンテナ ===== */
 #frameContainer {
   position: fixed;
   width: 100%;
   height: 100%;
 }
 
-/* フレーム */
+/* ===== フレーム ===== */
 .frameStep {
   position: absolute;
 }
 
+/* 外側（黄色） */
 .outer {
   position: absolute;
   width: 100%;
@@ -47,13 +60,15 @@ body {
   );
 }
 
+/* 内側（くり抜き） */
 .inner {
   position: absolute;
   top: 30px;
   left: 30px;
   right: 30px;
   bottom: 30px;
-  background: black;
+
+  background: transparent;
 
   clip-path: polygon(
     15% 0%, 85% 0%,
@@ -63,7 +78,7 @@ body {
   );
 }
 
-/* IPPON */
+/* ===== IPPON表示 ===== */
 #ipponWrapper {
   position: fixed;
   top: 50%;
@@ -71,6 +86,7 @@ body {
   transform: translate(-50%, -50%) scale(0.5);
   display: none;
   animation: pop 0.3s ease forwards;
+  z-index: 200;
 }
 
 #ipponBoard {
@@ -95,7 +111,6 @@ body {
 
 <body>
 
-<!-- カメラ -->
 <video id="camera" autoplay playsinline muted></video>
 
 <div id="frameContainer"></div>
@@ -133,11 +148,11 @@ const ipponDisplay = document.getElementById("ipponWrapper");
 let lastValue = 0;
 let IPPON_THRESHOLD = 5;
 
-/* ===== カメラ取得 ===== */
+/* ===== カメラ ===== */
 const video = document.getElementById("camera");
 
 navigator.mediaDevices.getUserMedia({
-  video: true, // ← iPhoneをWebカメラ化してればこれでOK
+  video: true,
   audio: false
 })
 .then(stream => {
