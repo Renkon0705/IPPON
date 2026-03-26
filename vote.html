@@ -2,10 +2,21 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>投票</title>
 
 <style>
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;              /* スクロール禁止 */
+  position: fixed;               /* 画面固定 */
+  touch-action: manipulation;    /* ダブルタップ防止 */
+  overscroll-behavior: none;
+}
+
 body {
   background: #111;
   color: white;
@@ -15,13 +26,13 @@ body {
 }
 
 .voteButton {
-  width: 210px;
+  width: 210px; /* ← 大きくした */
   height: 210px;
   background: yellow;
   border-radius: 50%;
   margin: 80px auto 0;
   cursor: pointer;
-  box-shadow: 0 0 20px rgba(255,255,0,0.7);
+  box-shadow: 0 0 30px rgba(255,255,0,0.9);
   transition: 0.15s;
 }
 
@@ -34,7 +45,6 @@ body {
   margin-top: 20px;
 }
 
-/* 管理者スイッチ */
 #adminToggle {
   margin-top: 20px;
   padding: 8px 16px;
@@ -44,7 +54,6 @@ body {
   display: inline-block;
 }
 
-/* リセットボタン（初期非表示） */
 #resetVotesButton,
 #resetAllButton {
   display: none;
@@ -110,19 +119,17 @@ function updateDisplay() {
   myVotesDisplay.textContent = `送信票数：${localVotes} / 2`;
 }
 
-/* ===== 管理者トグル ===== */
+/* 管理者切替 */
 adminToggle.addEventListener("click", () => {
   isAdmin = !isAdmin;
-
   adminToggle.textContent = `管理者モード：${isAdmin ? "ON" : "OFF"}`;
 
-  // ボタン表示切り替え
   const display = isAdmin ? "inline-block" : "none";
   resetVotesButton.style.display = display;
   resetAllButton.style.display = display;
 });
 
-/* ===== 投票 ===== */
+/* 投票 */
 button.addEventListener("click", () => {
 
   if (localVotes >= 2) return;
@@ -138,14 +145,14 @@ button.addEventListener("click", () => {
   });
 });
 
-/* ===== 管理者のみ：端末リセット ===== */
+/* 端末リセット */
 resetVotesButton.addEventListener("click", () => {
   localVotes = 0;
   button.style.opacity = "1";
   updateDisplay();
 });
 
-/* ===== 管理者のみ：IPPONリセット ===== */
+/* IPPONリセット */
 resetAllButton.addEventListener("click", () => {
   if (confirm("IPPONをリセットする？")) {
     set(voteRef, 0);
@@ -155,7 +162,7 @@ resetAllButton.addEventListener("click", () => {
   }
 });
 
-/* ===== 外部リセット検知 ===== */
+/* 外部リセット検知 */
 onValue(voteRef, (snapshot) => {
   const value = snapshot.val() || 0;
 
@@ -167,6 +174,29 @@ onValue(voteRef, (snapshot) => {
 });
 
 updateDisplay();
+
+/* ===== ズーム＆スクロール完全防止 ===== */
+
+// ダブルタップ防止
+let lastTouch = 0;
+document.addEventListener("touchend", (e) => {
+  const now = Date.now();
+  if (now - lastTouch <= 300) {
+    e.preventDefault();
+  }
+  lastTouch = now;
+}, { passive: false });
+
+// ピンチズーム防止
+document.addEventListener("gesturestart", (e) => {
+  e.preventDefault();
+});
+
+// スクロール防止
+document.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+}, { passive: false });
+
 </script>
 
 </body>
