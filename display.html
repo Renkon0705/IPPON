@@ -7,8 +7,18 @@
 <style>
 body {
   margin: 0;
-  background: black;
   overflow: hidden;
+}
+
+/* カメラ背景 */
+#camera {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
 }
 
 /* コンテナ */
@@ -18,12 +28,11 @@ body {
   height: 100%;
 }
 
-/* フレーム（外側） */
+/* フレーム */
 .frameStep {
   position: absolute;
 }
 
-/* 外側 */
 .outer {
   position: absolute;
   width: 100%;
@@ -38,7 +47,6 @@ body {
   );
 }
 
-/* 内側（くり抜き） */
 .inner {
   position: absolute;
   top: 30px;
@@ -87,6 +95,9 @@ body {
 
 <body>
 
+<!-- カメラ -->
+<video id="camera" autoplay playsinline muted></video>
+
 <div id="frameContainer"></div>
 
 <div id="ipponWrapper">
@@ -99,6 +110,7 @@ body {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
+/* ===== Firebase ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
   authDomain: "ipponsystem-245b4.firebaseapp.com",
@@ -121,10 +133,23 @@ const ipponDisplay = document.getElementById("ipponWrapper");
 let lastValue = 0;
 let IPPON_THRESHOLD = 5;
 
-/* ===== 音（修正版） ===== */
+/* ===== カメラ取得 ===== */
+const video = document.getElementById("camera");
+
+navigator.mediaDevices.getUserMedia({
+  video: true, // ← iPhoneをWebカメラ化してればこれでOK
+  audio: false
+})
+.then(stream => {
+  video.srcObject = stream;
+})
+.catch(err => {
+  console.error("カメラ取得失敗:", err);
+});
+
+/* ===== 音 ===== */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-// 初回クリックで有効化
 document.body.addEventListener("click", () => {
   audioCtx.resume();
 }, { once: true });
