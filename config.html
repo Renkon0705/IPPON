@@ -14,18 +14,19 @@ select, button { font-size: 18px; padding: 5px 10px; margin: 10px; }
 
 <label>参加人数：
   <select id="playerCount"></select>
-</label>
-<br>
+</label><br>
 
 <label>審査人数：
   <select id="judgeCount"></select>
-</label>
-<br>
+</label><br>
 
 <label>何票でIPPON？：
   <select id="threshold"></select>
-</label>
-<br>
+</label><br>
+
+<label>枠の太さ：
+  <select id="frameThickness"></select>
+</label><br>
 
 <button onclick="saveSettings()">保存</button>
 
@@ -38,48 +39,57 @@ const firebaseConfig = {
   authDomain: "ipponsystem-245b4.firebaseapp.com",
   databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "ipponsystem-245b4",
-  storageBucket: "ipponsystem-245b4.firebasestorage.app",
-  messagingSenderId: "1096087322754",
-  appId: "1:1096087322754:web:cd18fd1386d05e5c1df49b"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 参加人数・審査人数 1〜10
-function createOptions(selectId, max) {
-  const select = document.getElementById(selectId);
-  for (let i = 1; i <= max; i++) {
-    const option = document.createElement("option");
-    option.value = i;
-    option.textContent = i + "人";
-    select.appendChild(option);
+/* 選択肢生成 */
+function createOptions(id, max){
+  const s = document.getElementById(id);
+  for(let i=1;i<=max;i++){
+    const o = document.createElement("option");
+    o.value=i;
+    o.textContent=i+"人";
+    s.appendChild(o);
   }
 }
 
-// IPPON基準 1〜20
-function createThresholdOptions() {
-  const select = document.getElementById("threshold");
-  for (let i = 1; i <= 20; i++) {
-    const option = document.createElement("option");
-    option.value = i;
-    option.textContent = i + "票";
-    select.appendChild(option);
+function createThreshold(){
+  const s=document.getElementById("threshold");
+  for(let i=1;i<=20;i++){
+    const o=document.createElement("option");
+    o.value=i;
+    o.textContent=i+"票";
+    s.appendChild(o);
   }
 }
 
-createOptions("playerCount", 10);
-createOptions("judgeCount", 10);
-createThresholdOptions();
+function createThickness(){
+  const s=document.getElementById("frameThickness");
+  for(let i=10;i<=80;i+=5){
+    const o=document.createElement("option");
+    o.value=i;
+    o.textContent=i+"px";
+    s.appendChild(o);
+  }
+}
 
-window.saveSettings = function() {
-  const settings = {
-    playerCount: Number(document.getElementById("playerCount").value),
-    judgeCount: Number(document.getElementById("judgeCount").value),
-    threshold: Number(document.getElementById("threshold").value)
+createOptions("playerCount",10);
+createOptions("judgeCount",10);
+createThreshold();
+createThickness();
+
+/* 保存 */
+window.saveSettings = function(){
+  const settings={
+    playerCount:Number(playerCount.value),
+    judgeCount:Number(judgeCount.value),
+    threshold:Number(threshold.value),
+    frameThickness:Number(frameThickness.value)
   };
 
-  set(ref(db, "settings"), settings);
+  set(ref(db,"settings"),settings);
   alert("保存しました！");
 };
 </script>
