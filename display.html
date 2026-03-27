@@ -87,6 +87,10 @@ const svg = document.getElementById("frameSVG");
 let IPPON_THRESHOLD = 5;
 let lastValue = 0;
 
+/* ===== 枠情報を保持 ===== */
+let offsets = [];      // 各枠の位置
+let thicknesses = [];  // 各枠の太さ
+
 /* 設定 */
 onValue(settingsRef,snap=>{
   const d=snap.val();
@@ -124,73 +128,77 @@ function octagon(w,h,m){
   `;
 }
 
-/* ===== 完全版ロジック ===== */
-function draw(count){
-  svg.innerHTML="";
+/* ===== 枠を1本追加 ===== */
+function addFrame(index){
 
   const w = window.innerWidth;
   const h = window.innerHeight;
 
   const maxDepth = Math.min(w,h)/2;
 
-  /* ① 太さ配列を作る */
-  const thicknesses = [];
-  for(let i=0;i<count;i++){
-    // 外太く内細く
-    const t = 40 * (1 - i/(IPPON_THRESHOLD));
-    thicknesses.push(t);
-  }
+  /* 太さ（外太く内細く） */
+  const t = 40 * (1 - index/(IPPON_THRESHOLD));
 
-  /* ② 合計をスケーリング */
+  thicknesses.push(t);
+
+  /* 合計を調整（スケーリング） */
   const sum = thicknesses.reduce((a,b)=>a+b,0);
   const scale = maxDepth / sum;
 
-  const scaled = thicknesses.map(t=>t*scale);
-
-  /* ③ 累積で配置 */
+  /* 全枠を再配置（でも外枠の見た目は維持） */
   let offset = 0;
 
-  for(let i=0;i<count;i++){
-    const t = scaled[i];
+  svg.innerHTML = "";
+
+  for(let i=0;i<thicknesses.length;i++){
+
+    const tt = thicknesses[i] * scale;
 
     const outer = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     outer.setAttribute("points", octagon(w-2*offset, h-2*offset, offset));
     outer.setAttribute("fill","none");
     outer.setAttribute("stroke","black");
-    outer.setAttribute("stroke-width", t + 4);
+    outer.setAttribute("stroke-width", tt + 4);
 
     const inner = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     inner.setAttribute("points", octagon(w-2*offset, h-2*offset, offset));
     inner.setAttribute("fill","none");
     inner.setAttribute("stroke","#ffe600");
-    inner.setAttribute("stroke-width", t);
+    inner.setAttribute("stroke-width", tt);
 
     svg.appendChild(outer);
     svg.appendChild(inner);
 
-    offset += t; // ←これが超重要
+    offset += tt;
   }
+}
+
+/* リセット */
+function resetFrames(){
+  svg.innerHTML="";
+  thicknesses=[];
 }
 
 /* 監視 */
 onValue(voteRef,snap=>{
   const v = snap.val()||0;
 
-  draw(v);
+  if(v > lastValue){
+    addFrame(v-1); // ←追加だけ
+    tone(600+v*100);
+  }
 
-  if(v>lastValue) tone(600+v*100);
-
-  if(v>=IPPON_THRESHOLD){
+  if(v >= IPPON_THRESHOLD){
     ipponWrapper.style.display="block";
 
     setTimeout(()=>{
       ipponWrapper.style.display="none";
-      draw(0);
+      resetFrames();
       set(voteRef,0);
     },3000);
   }
 
-  lastValue=v;
+  lastValue = v;
 });
 </script>
 
