@@ -5,60 +5,54 @@
 <title>IPPON表示</title>
 
 <style>
-body {
-  margin: 0;
-  overflow: hidden;
-  background: black;
-}
+body { margin:0; overflow:hidden; background:black; }
 
 #camera {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  position:fixed;
+  width:100%;
+  height:100%;
+  object-fit:cover;
 }
 
 body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  border: 20px solid black;
-  z-index: 10;
+  content:"";
+  position:fixed;
+  inset:0;
+  border:20px solid black;
+  z-index:10;
 }
 
 #frameSVG {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+  position:fixed;
+  width:100%;
+  height:100%;
+  pointer-events:none;
 }
 
 #ipponWrapper {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.5);
-  display: none;
-  animation: pop 0.3s ease forwards;
-  z-index: 20;
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(0.5);
+  display:none;
+  animation:pop 0.3s forwards;
+  z-index:20;
 }
 
 #ipponBoard {
-  background: black;
-  padding: 40px 120px;
-  box-shadow: 0 0 40px gold;
+  background:black;
+  padding:40px 120px;
+  box-shadow:0 0 40px gold;
 }
 
 #ipponText {
-  font-size: 140px;
-  font-weight: 900;
-  color: #ffe600;
+  font-size:140px;
+  font-weight:900;
+  color:#ffe600;
 }
 
 @keyframes pop {
-  to {
-    transform: translate(-50%, -50%) scale(1);
-  }
+  to { transform:translate(-50%,-50%) scale(1); }
 }
 </style>
 </head>
@@ -80,13 +74,13 @@ import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebase
 
 /* Firebase */
 const app = initializeApp({
-  apiKey: "AIzaSy...",
-  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app"
+  apiKey:"AIzaSy...",
+  databaseURL:"https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app"
 });
 const db = getDatabase(app);
 
-const voteRef = ref(db, "votes");
-const settingsRef = ref(db, "settings");
+const voteRef = ref(db,"votes");
+const settingsRef = ref(db,"settings");
 
 const svg = document.getElementById("frameSVG");
 
@@ -94,22 +88,22 @@ let IPPON_THRESHOLD = 5;
 let lastValue = 0;
 
 /* 設定 */
-onValue(settingsRef, snap=>{
-  const d = snap.val();
+onValue(settingsRef,snap=>{
+  const d=snap.val();
   if(d?.threshold) IPPON_THRESHOLD = Number(d.threshold);
 });
 
 /* カメラ */
-navigator.mediaDevices.getUserMedia({ video: true })
+navigator.mediaDevices.getUserMedia({video:true})
 .then(s=>camera.srcObject=s);
 
 /* 音 */
-const ctx = new (window.AudioContext || window.webkitAudioContext)();
-document.body.addEventListener("click", ()=>ctx.resume(), {once:true});
+const ctx = new (window.AudioContext||window.webkitAudioContext)();
+document.body.addEventListener("click",()=>ctx.resume(),{once:true});
 
 function tone(f){
-  const o = ctx.createOscillator();
-  const g = ctx.createGain();
+  const o=ctx.createOscillator();
+  const g=ctx.createGain();
   o.frequency.value=f;
   g.gain.value=0.25;
   o.connect(g); g.connect(ctx.destination);
@@ -130,21 +124,34 @@ function octagon(w,h,m){
   `;
 }
 
-/* ===== 描画（今回の核心） ===== */
+/* ===== 完全版ロジック ===== */
 function draw(count){
   svg.innerHTML="";
 
   const w = window.innerWidth;
   const h = window.innerHeight;
 
-  const baseThickness = 30; // ← 最大の太さ（ここ調整）
+  const maxDepth = Math.min(w,h)/2;
+
+  /* ① 太さ配列を作る */
+  const thicknesses = [];
+  for(let i=0;i<count;i++){
+    // 外太く内細く
+    const t = 40 * (1 - i/(IPPON_THRESHOLD));
+    thicknesses.push(t);
+  }
+
+  /* ② 合計をスケーリング */
+  const sum = thicknesses.reduce((a,b)=>a+b,0);
+  const scale = maxDepth / sum;
+
+  const scaled = thicknesses.map(t=>t*scale);
+
+  /* ③ 累積で配置 */
+  let offset = 0;
 
   for(let i=0;i<count;i++){
-
-    // 外から順に太さを変える
-    const t = baseThickness * (1 - i/(IPPON_THRESHOLD));
-
-    const offset = i * t;
+    const t = scaled[i];
 
     const outer = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     outer.setAttribute("points", octagon(w-2*offset, h-2*offset, offset));
@@ -160,11 +167,13 @@ function draw(count){
 
     svg.appendChild(outer);
     svg.appendChild(inner);
+
+    offset += t; // ←これが超重要
   }
 }
 
 /* 監視 */
-onValue(voteRef, snap=>{
+onValue(voteRef,snap=>{
   const v = snap.val()||0;
 
   draw(v);
