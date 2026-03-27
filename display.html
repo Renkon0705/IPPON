@@ -19,7 +19,7 @@ body {
   object-fit: cover;
 }
 
-/* 外枠 */
+/* 外黒枠 */
 body::after {
   content: "";
   position: fixed;
@@ -36,7 +36,7 @@ body::after {
   pointer-events: none;
 }
 
-/* IPPON */
+/* IPPON表示 */
 #ipponWrapper {
   position: fixed;
   top: 50%;
@@ -97,7 +97,7 @@ const svg = document.getElementById("frameSVG");
 let IPPON_THRESHOLD = 5;
 let lastValue = 0;
 
-/* 設定 */
+/* 設定読み込み */
 onValue(settingsRef, snap=>{
   const d = snap.val();
   if(d?.threshold) IPPON_THRESHOLD = Number(d.threshold);
@@ -114,13 +114,13 @@ document.body.addEventListener("click", ()=>ctx.resume(), {once:true});
 function tone(f){
   const o = ctx.createOscillator();
   const g = ctx.createGain();
-  o.frequency.value=f;
-  g.gain.value=0.25;
+  o.frequency.value = f;
+  g.gain.value = 0.25;
   o.connect(g); g.connect(ctx.destination);
   o.start(); o.stop(ctx.currentTime+0.2);
 }
 
-/* ===== 八角形（画面基準） ===== */
+/* ===== 八角形 ===== */
 function octagon(w, h, m){
   return `
     ${m+w*0.1},${m}
@@ -134,28 +134,33 @@ function octagon(w, h, m){
   `;
 }
 
-/* ===== 描画（ここが完成形） ===== */
+/* ===== 描画（完成版） ===== */
 function draw(count){
-  svg.innerHTML="";
+  svg.innerHTML = "";
 
   const w = window.innerWidth;
   const h = window.innerHeight;
 
-  const gap = 18;          // 枠の間隔（狭く）
-  const thickness = 14;    // 枠の太さ
+  /* ===== 調整ポイント ===== */
+  const thickness = 18;      // ← 枠の太さ（ここ変える）
+  const gap = thickness*0.6; // ← 枠の間隔（自然な比率）
+
+  /* ===== ここが核心 ===== */
+  const maxOffset = Math.min(w, h)/2 - thickness;
+  const step = maxOffset / (IPPON_THRESHOLD - 1 || 1);
 
   for(let i=0;i<count;i++){
 
-    const offset = i * (gap + thickness);
+    const offset = i * step;
 
-    /* 外側（黒ライン） */
+    /* 黒アウトライン */
     const outer = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     outer.setAttribute("points", octagon(w-2*offset, h-2*offset, offset));
     outer.setAttribute("fill","none");
     outer.setAttribute("stroke","black");
-    outer.setAttribute("stroke-width", thickness + 4);
+    outer.setAttribute("stroke-width", thickness + 6);
 
-    /* 内側（黄色） */
+    /* 黄色本体 */
     const inner = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     inner.setAttribute("points", octagon(w-2*offset, h-2*offset, offset));
     inner.setAttribute("fill","none");
@@ -169,23 +174,23 @@ function draw(count){
 
 /* 監視 */
 onValue(voteRef, snap=>{
-  const v = snap.val()||0;
+  const v = snap.val() || 0;
 
   draw(v);
 
-  if(v>lastValue) tone(600+v*100);
+  if(v > lastValue) tone(600 + v*100);
 
-  if(v>=IPPON_THRESHOLD){
-    ipponWrapper.style.display="block";
+  if(v >= IPPON_THRESHOLD){
+    ipponWrapper.style.display = "block";
 
     setTimeout(()=>{
-      ipponWrapper.style.display="none";
+      ipponWrapper.style.display = "none";
       draw(0);
-      set(voteRef,0);
+      set(voteRef, 0);
     },3000);
   }
 
-  lastValue=v;
+  lastValue = v;
 });
 </script>
 
