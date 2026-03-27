@@ -127,7 +127,7 @@ function ipponSound(){
   o.frequency.setValueAtTime(120, ctx.currentTime);
   o.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.6);
 
-  g.gain.setValueAtTime(0.4, ctx.currentTime);
+  g.gain.setValueAtTime(1.0, ctx.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
 
   o.connect(g);
