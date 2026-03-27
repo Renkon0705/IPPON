@@ -11,72 +11,33 @@ body {
   background: black;
 }
 
-/* 外枠 */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  border: 20px solid black;
-  z-index: 100;
-}
-
 /* カメラ */
 #camera {
   position: fixed;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: -1;
 }
 
-/* コンテナ */
-#frameContainer {
+/* 外枠 */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  border: 20px solid black;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* SVG */
+#frameSVG {
   position: fixed;
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
 
-/* ===== フレーム ===== */
-.frameStep {
-  position: absolute;
-}
-
-/* 外（黄色） */
-.outer {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: #ffe600;
-
-  clip-path: polygon(
-    12% 0%, 88% 0%,
-    100% 12%, 100% 88%,
-    88% 100%, 12% 100%,
-    0% 88%, 0% 12%
-  );
-}
-
-/* 内（くり抜き用） */
-.inner {
-  position: absolute;
-  top: 18px;
-  left: 18px;
-  right: 18px;
-  bottom: 18px;
-
-  /* 背景なしにする */
-  background: transparent;
-
-  /* 同じ形で小さく */
-  clip-path: polygon(
-    12% 0%, 88% 0%,
-    100% 12%, 100% 88%,
-    88% 100%, 12% 100%,
-    0% 88%, 0% 12%
-  );
-}
-
-/* ===== IPPON ===== */
+/* IPPON */
 #ipponWrapper {
   position: fixed;
   top: 50%;
@@ -84,7 +45,7 @@ body::after {
   transform: translate(-50%, -50%) scale(0.5);
   display: none;
   animation: pop 0.3s ease forwards;
-  z-index: 200;
+  z-index: 20;
 }
 
 #ipponBoard {
@@ -111,7 +72,8 @@ body::after {
 
 <video id="camera" autoplay playsinline muted></video>
 
-<div id="frameContainer"></div>
+<!-- SVG枠 -->
+<svg id="frameSVG"></svg>
 
 <div id="ipponWrapper">
   <div id="ipponBoard">
@@ -135,94 +97,93 @@ const db = getDatabase(app);
 const voteRef = ref(db, "votes");
 const settingsRef = ref(db, "settings");
 
-const container = document.getElementById("frameContainer");
-const ipponDisplay = document.getElementById("ipponWrapper");
+const svg = document.getElementById("frameSVG");
 
 let IPPON_THRESHOLD = 5;
 let lastValue = 0;
 
-/* 設定反映 */
-onValue(settingsRef, (snapshot) => {
-  const data = snapshot.val();
-  if (data?.threshold) {
-    IPPON_THRESHOLD = Number(data.threshold);
-  }
+/* 設定 */
+onValue(settingsRef, (snap) => {
+  const d = snap.val();
+  if (d?.threshold) IPPON_THRESHOLD = Number(d.threshold);
 });
 
 /* カメラ */
 navigator.mediaDevices.getUserMedia({ video: true })
-.then(stream => {
-  document.getElementById("camera").srcObject = stream;
-});
+.then(s => document.getElementById("camera").srcObject = s);
 
 /* 音 */
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-document.body.addEventListener("click", () => audioCtx.resume(), { once: true });
+const ctx = new (window.AudioContext || window.webkitAudioContext)();
+document.body.addEventListener("click", () => ctx.resume(), { once: true });
 
-function playTone(f) {
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
+function tone(f){
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
   o.frequency.value = f;
   g.gain.value = 0.25;
-  o.connect(g);
-  g.connect(audioCtx.destination);
-  o.start();
-  o.stop(audioCtx.currentTime + 0.2);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime+0.2);
 }
 
-/* ===== 枠（ここが最重要） ===== */
-function drawFrames(count) {
-  container.innerHTML = "";
+/* ===== 八角形パス ===== */
+function getOctagon(w, h, pad){
+  return `
+    ${pad + w*0.12},${pad}
+    ${pad + w*0.88},${pad}
+    ${pad + w},${pad + h*0.12}
+    ${pad + w},${pad + h*0.88}
+    ${pad + w*0.88},${pad + h}
+    ${pad + w*0.12},${pad + h}
+    ${pad},${pad + h*0.88}
+    ${pad},${pad + h*0.12}
+  `;
+}
 
-  const padding = 40; // ← 初期位置を画面内に収める
-  const max = (Math.min(window.innerWidth, window.innerHeight) / 2) - padding;
+/* ===== 描画 ===== */
+function draw(count){
+  svg.innerHTML = "";
+
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  const margin = 60;
+  const max = Math.min(w, h) - margin*2;
   const step = max / IPPON_THRESHOLD;
 
-  for (let i = 0; i < count; i++) {
-    const frame = document.createElement("div");
-    frame.className = "frameStep";
+  for(let i=0;i<count;i++){
+    const size = max - i*step;
+    const offset = (Math.min(w,h)-size)/2;
 
-    const offset = padding + i * step;
+    const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
 
-    frame.style.top = offset + "px";
-    frame.style.left = offset + "px";
-    frame.style.right = offset + "px";
-    frame.style.bottom = offset + "px";
+    poly.setAttribute("points", getOctagon(size, size, offset));
+    poly.setAttribute("fill", "none");
+    poly.setAttribute("stroke", "#ffe600");
+    poly.setAttribute("stroke-width", "12");
 
-    const outer = document.createElement("div");
-    outer.className = "outer";
-
-    const inner = document.createElement("div");
-    inner.className = "inner";
-
-    frame.appendChild(outer);
-    frame.appendChild(inner);
-
-    container.appendChild(frame);
+    svg.appendChild(poly);
   }
 }
 
 /* 監視 */
-onValue(voteRef, (snapshot) => {
-  const value = snapshot.val() || 0;
+onValue(voteRef, snap=>{
+  const v = snap.val()||0;
 
-  drawFrames(value);
+  draw(v);
 
-  if (value > lastValue) {
-    playTone(600 + value * 100);
+  if(v>lastValue) tone(600+v*100);
+
+  if(v>=IPPON_THRESHOLD){
+    document.getElementById("ipponWrapper").style.display="block";
+
+    setTimeout(()=>{
+      document.getElementById("ipponWrapper").style.display="none";
+      draw(0);
+      set(voteRef,0);
+    },3000);
   }
 
-  if (value >= IPPON_THRESHOLD) {
-    ipponDisplay.style.display = "block";
-
-    setTimeout(() => {
-      ipponDisplay.style.display = "none";
-      drawFrames(0);
-      set(voteRef, 0);
-    }, 3000);
-  }
-
-  lastValue = value;
+  lastValue=v;
 });
 </script>
 
