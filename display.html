@@ -37,20 +37,20 @@ body::after {
   height: 100%;
 }
 
-/* ===== 本物方式：くり抜きフレーム ===== */
+/* ===== フレーム（完全くり抜き） ===== */
 .frameStep {
   position: absolute;
   background: #ffe600;
 
-  /* 外形（IPPON形） */
+  /* 八角形（修正版） */
   clip-path: polygon(
-    10% 0%, 90% 0%,
-    100% 10%, 100% 90%,
-    90% 100%, 10% 100%,
-    0% 90%, 0% 10%
+    12% 0%, 88% 0%,
+    100% 12%, 100% 88%,
+    88% 100%, 12% 100%,
+    0% 88%, 0% 12%
   );
 
-  /* 内側をくり抜く（ここが核心） */
+  /* くり抜き（最重要） */
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -61,7 +61,7 @@ body::after {
     linear-gradient(#000 0 0);
   mask-composite: exclude;
 
-  padding: 20px; /* ← 枠の太さ */
+  padding: 18px; /* 枠の太さ */
 }
 
 /* IPPON */
@@ -111,15 +111,19 @@ body::after {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
+/* ===== Firebase ===== */
 const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app"
+  apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
+  authDomain: "ipponsystem-245b4.firebaseapp.com",
+  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ipponsystem-245b4",
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const voteRef = ref(db, "votes");
+const settingsRef = ref(db, "settings");
 
 const container = document.getElementById("frameContainer");
 const ipponDisplay = document.getElementById("ipponWrapper");
@@ -127,39 +131,59 @@ const ipponDisplay = document.getElementById("ipponWrapper");
 let lastValue = 0;
 let IPPON_THRESHOLD = 5;
 
-/* カメラ */
+/* ===== 設定読み込み ===== */
+onValue(settingsRef, (snapshot) => {
+  const data = snapshot.val();
+  if (data && data.threshold) {
+    IPPON_THRESHOLD = Number(data.threshold);
+  }
+});
+
+/* ===== カメラ ===== */
 navigator.mediaDevices.getUserMedia({ video: true })
 .then(stream => {
   document.getElementById("camera").srcObject = stream;
 });
 
-/* 音 */
+/* ===== 音 ===== */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-document.body.addEventListener("click", () => audioCtx.resume(), { once: true });
 
-function playTone(f) {
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.frequency.value = f;
-  g.gain.value = 0.25;
-  o.connect(g);
-  g.connect(audioCtx.destination);
-  o.start();
-  o.stop(audioCtx.currentTime + 0.2);
+document.body.addEventListener("click", () => {
+  audioCtx.resume();
+}, { once: true });
+
+function playTone(freq) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.frequency.value = freq;
+  gain.gain.value = 0.25;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.2);
 }
 
-/* 枠 */
+function playSuccess() {
+  [784, 988, 1318].forEach((f, i) => {
+    setTimeout(() => playTone(f), i * 120);
+  });
+}
+
+/* ===== 枠描画（ここ超重要） ===== */
 function drawFrames(count) {
   container.innerHTML = "";
 
-  const gap = 25;
-  const thickness = 20;
+  const max = Math.min(window.innerWidth, window.innerHeight) / 2;
+  const step = max / IPPON_THRESHOLD;
 
   for (let i = 0; i < count; i++) {
     const frame = document.createElement("div");
     frame.className = "frameStep";
 
-    const offset = i * (gap + thickness);
+    const offset = i * step;
 
     frame.style.top = offset + "px";
     frame.style.left = offset + "px";
@@ -170,15 +194,20 @@ function drawFrames(count) {
   }
 }
 
-/* 監視 */
+/* ===== 監視 ===== */
 onValue(voteRef, (snapshot) => {
   const value = snapshot.val() || 0;
 
   drawFrames(value);
 
-  if (value > lastValue) playTone(600 + value * 100);
+  if (value > lastValue) {
+    playTone(600 + value * 100);
+  }
 
   if (value >= IPPON_THRESHOLD) {
+
+    playSuccess();
+
     ipponDisplay.style.display = "block";
 
     setTimeout(() => {
