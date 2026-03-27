@@ -26,7 +26,6 @@ body::after {
   inset: 0;
   border: 20px solid black;
   z-index: 10;
-  pointer-events: none;
 }
 
 /* SVG */
@@ -71,8 +70,6 @@ body::after {
 <body>
 
 <video id="camera" autoplay playsinline muted></video>
-
-<!-- SVG枠 -->
 <svg id="frameSVG"></svg>
 
 <div id="ipponWrapper">
@@ -86,12 +83,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 /* Firebase */
-const firebaseConfig = {
-  apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
+const app = initializeApp({
+  apiKey: "AIzaSy...",
   databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app"
-};
-
-const app = initializeApp(firebaseConfig);
+});
 const db = getDatabase(app);
 
 const voteRef = ref(db, "votes");
@@ -103,65 +98,72 @@ let IPPON_THRESHOLD = 5;
 let lastValue = 0;
 
 /* 設定 */
-onValue(settingsRef, (snap) => {
+onValue(settingsRef, snap=>{
   const d = snap.val();
-  if (d?.threshold) IPPON_THRESHOLD = Number(d.threshold);
+  if(d?.threshold) IPPON_THRESHOLD = Number(d.threshold);
 });
 
 /* カメラ */
 navigator.mediaDevices.getUserMedia({ video: true })
-.then(s => document.getElementById("camera").srcObject = s);
+.then(s=>camera.srcObject=s);
 
 /* 音 */
 const ctx = new (window.AudioContext || window.webkitAudioContext)();
-document.body.addEventListener("click", () => ctx.resume(), { once: true });
+document.body.addEventListener("click", ()=>ctx.resume(), {once:true});
 
 function tone(f){
   const o = ctx.createOscillator();
   const g = ctx.createGain();
-  o.frequency.value = f;
-  g.gain.value = 0.25;
+  o.frequency.value=f;
+  g.gain.value=0.25;
   o.connect(g); g.connect(ctx.destination);
   o.start(); o.stop(ctx.currentTime+0.2);
 }
 
-/* ===== 八角形パス ===== */
-function getOctagon(w, h, pad){
+/* ===== 八角形（画面基準） ===== */
+function octagon(w, h, m){
   return `
-    ${pad + w*0.12},${pad}
-    ${pad + w*0.88},${pad}
-    ${pad + w},${pad + h*0.12}
-    ${pad + w},${pad + h*0.88}
-    ${pad + w*0.88},${pad + h}
-    ${pad + w*0.12},${pad + h}
-    ${pad},${pad + h*0.88}
-    ${pad},${pad + h*0.12}
+    ${m+w*0.1},${m}
+    ${m+w*0.9},${m}
+    ${m+w},${m+h*0.1}
+    ${m+w},${m+h*0.9}
+    ${m+w*0.9},${m+h}
+    ${m+w*0.1},${m+h}
+    ${m},${m+h*0.9}
+    ${m},${m+h*0.1}
   `;
 }
 
-/* ===== 描画 ===== */
+/* ===== 描画（ここが完成形） ===== */
 function draw(count){
-  svg.innerHTML = "";
+  svg.innerHTML="";
 
   const w = window.innerWidth;
   const h = window.innerHeight;
 
-  const margin = 60;
-  const max = Math.min(w, h) - margin*2;
-  const step = max / IPPON_THRESHOLD;
+  const gap = 18;          // 枠の間隔（狭く）
+  const thickness = 14;    // 枠の太さ
 
   for(let i=0;i<count;i++){
-    const size = max - i*step;
-    const offset = (Math.min(w,h)-size)/2;
 
-    const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
+    const offset = i * (gap + thickness);
 
-    poly.setAttribute("points", getOctagon(size, size, offset));
-    poly.setAttribute("fill", "none");
-    poly.setAttribute("stroke", "#ffe600");
-    poly.setAttribute("stroke-width", "12");
+    /* 外側（黒ライン） */
+    const outer = document.createElementNS("http://www.w3.org/2000/svg","polygon");
+    outer.setAttribute("points", octagon(w-2*offset, h-2*offset, offset));
+    outer.setAttribute("fill","none");
+    outer.setAttribute("stroke","black");
+    outer.setAttribute("stroke-width", thickness + 4);
 
-    svg.appendChild(poly);
+    /* 内側（黄色） */
+    const inner = document.createElementNS("http://www.w3.org/2000/svg","polygon");
+    inner.setAttribute("points", octagon(w-2*offset, h-2*offset, offset));
+    inner.setAttribute("fill","none");
+    inner.setAttribute("stroke","#ffe600");
+    inner.setAttribute("stroke-width", thickness);
+
+    svg.appendChild(outer);
+    svg.appendChild(inner);
   }
 }
 
@@ -174,10 +176,10 @@ onValue(voteRef, snap=>{
   if(v>lastValue) tone(600+v*100);
 
   if(v>=IPPON_THRESHOLD){
-    document.getElementById("ipponWrapper").style.display="block";
+    ipponWrapper.style.display="block";
 
     setTimeout(()=>{
-      document.getElementById("ipponWrapper").style.display="none";
+      ipponWrapper.style.display="none";
       draw(0);
       set(voteRef,0);
     },3000);
