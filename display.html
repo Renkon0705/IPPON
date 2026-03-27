@@ -125,16 +125,16 @@ function ipponSound(){
 
   o.type = "sine";
   o.frequency.setValueAtTime(120, ctx.currentTime);
-  o.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.6);
+  o.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 1.2);
 
   g.gain.setValueAtTime(5.0, ctx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
 
   o.connect(g);
   g.connect(ctx.destination);
 
   o.start();
-  o.stop(ctx.currentTime + 0.6);
+  o.stop(ctx.currentTime + 1.2);
 }
 
 /* 八角形 */
