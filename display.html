@@ -5,64 +5,54 @@
 <title>IPPON表示</title>
 
 <style>
-body {
-  margin: 0;
-  overflow: hidden;
-  background: black;
-}
+body { margin:0; overflow:hidden; background:black; }
 
-/* カメラ */
 #camera {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  position:fixed;
+  width:100%;
+  height:100%;
+  object-fit:cover;
 }
 
-/* 外黒枠 */
 body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  border: 20px solid black;
-  z-index: 10;
+  content:"";
+  position:fixed;
+  inset:0;
+  border:20px solid black;
+  z-index:10;
 }
 
-/* SVG */
 #frameSVG {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+  position:fixed;
+  width:100%;
+  height:100%;
+  pointer-events:none;
 }
 
-/* IPPON表示 */
 #ipponWrapper {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.5);
-  display: none;
-  animation: pop 0.3s ease forwards;
-  z-index: 20;
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(0.5);
+  display:none;
+  animation:pop 0.3s forwards;
+  z-index:20;
 }
 
 #ipponBoard {
-  background: black;
-  padding: 40px 120px;
-  box-shadow: 0 0 40px gold;
+  background:black;
+  padding:40px 120px;
+  box-shadow:0 0 40px gold;
 }
 
 #ipponText {
-  font-size: 140px;
-  font-weight: 900;
-  color: #ffe600;
+  font-size:140px;
+  font-weight:900;
+  color:#ffe600;
 }
 
 @keyframes pop {
-  to {
-    transform: translate(-50%, -50%) scale(1);
-  }
+  to { transform:translate(-50%,-50%) scale(1); }
 }
 </style>
 </head>
@@ -84,7 +74,7 @@ import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebase
 
 /* Firebase */
 const app = initializeApp({
-  apiKey: "AIzaSy...",
+  apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
   databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app"
 });
 const db = getDatabase(app);
@@ -95,12 +85,14 @@ const settingsRef = ref(db, "settings");
 const svg = document.getElementById("frameSVG");
 
 let IPPON_THRESHOLD = 5;
+let FRAME_THICKNESS = 40;
 let lastValue = 0;
 
 /* 設定読み込み */
 onValue(settingsRef, snap=>{
   const d = snap.val();
   if(d?.threshold) IPPON_THRESHOLD = Number(d.threshold);
+  if(d?.frameThickness) FRAME_THICKNESS = Number(d.frameThickness);
 });
 
 /* カメラ */
@@ -120,8 +112,8 @@ function tone(f){
   o.start(); o.stop(ctx.currentTime+0.2);
 }
 
-/* ===== 八角形 ===== */
-function octagon(w, h, m){
+/* 八角形 */
+function octagon(w,h,m){
   return `
     ${m+w*0.1},${m}
     ${m+w*0.9},${m}
@@ -134,41 +126,47 @@ function octagon(w, h, m){
   `;
 }
 
-/* ===== 描画（完成版） ===== */
+/* 描画 */
 function draw(count){
-  svg.innerHTML = "";
+  svg.innerHTML="";
 
   const w = window.innerWidth;
   const h = window.innerHeight;
 
-  /* ===== 調整ポイント ===== */
-  const thickness = 40;      // ← 枠の太さ（ここ変える）
-  const gap = thickness*0.6; // ← 枠の間隔（自然な比率）
+  const maxDepth = Math.min(w,h)/2;
 
-  /* ===== ここが核心 ===== */
-  const maxOffset = Math.min(w, h)/2 - thickness;
-  const step = maxOffset / (IPPON_THRESHOLD - 1 || 1);
-
+  /* 太さリスト作成 */
+  const thicknesses = [];
   for(let i=0;i<count;i++){
+    const t = FRAME_THICKNESS * (1 - i/(IPPON_THRESHOLD));
+    thicknesses.push(t);
+  }
 
-    const offset = i * step;
+  /* スケーリング */
+  const sum = thicknesses.reduce((a,b)=>a+b,0);
+  const scale = maxDepth / (sum || 1);
 
-    /* 黒アウトライン */
+  let offset = 0;
+
+  for(let i=0;i<thicknesses.length;i++){
+    const t = thicknesses[i] * scale;
+
     const outer = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     outer.setAttribute("points", octagon(w-2*offset, h-2*offset, offset));
     outer.setAttribute("fill","none");
     outer.setAttribute("stroke","black");
-    outer.setAttribute("stroke-width", thickness + 6);
+    outer.setAttribute("stroke-width", t + 4);
 
-    /* 黄色本体 */
     const inner = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     inner.setAttribute("points", octagon(w-2*offset, h-2*offset, offset));
     inner.setAttribute("fill","none");
     inner.setAttribute("stroke","#ffe600");
-    inner.setAttribute("stroke-width", thickness);
+    inner.setAttribute("stroke-width", t);
 
     svg.appendChild(outer);
     svg.appendChild(inner);
+
+    offset += t;
   }
 }
 
