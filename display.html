@@ -18,7 +18,6 @@ body::after {
   inset: 0;
   border: 20px solid black;
   z-index: 100;
-  pointer-events: none;
 }
 
 /* カメラ */
@@ -37,34 +36,47 @@ body::after {
   height: 100%;
 }
 
-/* ===== フレーム（完全くり抜き） ===== */
+/* ===== フレーム ===== */
 .frameStep {
   position: absolute;
+}
+
+/* 外（黄色） */
+.outer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
   background: #ffe600;
 
-  /* 八角形（修正版） */
   clip-path: polygon(
     12% 0%, 88% 0%,
     100% 12%, 100% 88%,
     88% 100%, 12% 100%,
     0% 88%, 0% 12%
   );
-
-  /* くり抜き（最重要） */
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-
-  padding: 18px; /* 枠の太さ */
 }
 
-/* IPPON */
+/* 内（くり抜き用） */
+.inner {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+
+  /* 背景なしにする */
+  background: transparent;
+
+  /* 同じ形で小さく */
+  clip-path: polygon(
+    12% 0%, 88% 0%,
+    100% 12%, 100% 88%,
+    88% 100%, 12% 100%,
+    0% 88%, 0% 12%
+  );
+}
+
+/* ===== IPPON ===== */
 #ipponWrapper {
   position: fixed;
   top: 50%;
@@ -111,12 +123,10 @@ body::after {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-/* ===== Firebase ===== */
+/* Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyCi4a7SeWlbQspdevchiDJYCtfIIqOn5GM",
-  authDomain: "ipponsystem-245b4.firebaseapp.com",
-  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "ipponsystem-245b4",
+  databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -128,73 +138,71 @@ const settingsRef = ref(db, "settings");
 const container = document.getElementById("frameContainer");
 const ipponDisplay = document.getElementById("ipponWrapper");
 
-let lastValue = 0;
 let IPPON_THRESHOLD = 5;
+let lastValue = 0;
 
-/* ===== 設定読み込み ===== */
+/* 設定反映 */
 onValue(settingsRef, (snapshot) => {
   const data = snapshot.val();
-  if (data && data.threshold) {
+  if (data?.threshold) {
     IPPON_THRESHOLD = Number(data.threshold);
   }
 });
 
-/* ===== カメラ ===== */
+/* カメラ */
 navigator.mediaDevices.getUserMedia({ video: true })
 .then(stream => {
   document.getElementById("camera").srcObject = stream;
 });
 
-/* ===== 音 ===== */
+/* 音 */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+document.body.addEventListener("click", () => audioCtx.resume(), { once: true });
 
-document.body.addEventListener("click", () => {
-  audioCtx.resume();
-}, { once: true });
-
-function playTone(freq) {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-
-  osc.frequency.value = freq;
-  gain.gain.value = 0.25;
-
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.2);
+function playTone(f) {
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.frequency.value = f;
+  g.gain.value = 0.25;
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + 0.2);
 }
 
-function playSuccess() {
-  [784, 988, 1318].forEach((f, i) => {
-    setTimeout(() => playTone(f), i * 120);
-  });
-}
-
-/* ===== 枠描画（ここ超重要） ===== */
+/* ===== 枠（ここが最重要） ===== */
 function drawFrames(count) {
   container.innerHTML = "";
 
-  const max = Math.min(window.innerWidth, window.innerHeight) / 2;
+  const padding = 40; // ← 初期位置を画面内に収める
+  const max = (Math.min(window.innerWidth, window.innerHeight) / 2) - padding;
   const step = max / IPPON_THRESHOLD;
 
   for (let i = 0; i < count; i++) {
     const frame = document.createElement("div");
     frame.className = "frameStep";
 
-    const offset = i * step;
+    const offset = padding + i * step;
 
     frame.style.top = offset + "px";
     frame.style.left = offset + "px";
     frame.style.right = offset + "px";
     frame.style.bottom = offset + "px";
 
+    const outer = document.createElement("div");
+    outer.className = "outer";
+
+    const inner = document.createElement("div");
+    inner.className = "inner";
+
+    frame.appendChild(outer);
+    frame.appendChild(inner);
+
     container.appendChild(frame);
   }
 }
 
-/* ===== 監視 ===== */
+/* 監視 */
 onValue(voteRef, (snapshot) => {
   const value = snapshot.val() || 0;
 
@@ -205,9 +213,6 @@ onValue(voteRef, (snapshot) => {
   }
 
   if (value >= IPPON_THRESHOLD) {
-
-    playSuccess();
-
     ipponDisplay.style.display = "block";
 
     setTimeout(() => {
