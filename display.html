@@ -11,7 +11,6 @@ body {
   background: black;
 }
 
-/* カメラ */
 #camera {
   position: fixed;
   width: 100%;
@@ -19,7 +18,6 @@ body {
   object-fit: cover;
 }
 
-/* 外黒枠 */
 body::after {
   content: "";
   position: fixed;
@@ -28,7 +26,6 @@ body::after {
   z-index: 10;
 }
 
-/* SVG */
 #frameSVG {
   position: fixed;
   width: 100%;
@@ -36,7 +33,6 @@ body::after {
   pointer-events: none;
 }
 
-/* IPPON表示 */
 #ipponWrapper {
   position: fixed;
   top: 50%;
@@ -82,7 +78,6 @@ body::after {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-/* Firebase */
 const app = initializeApp({
   apiKey: "AIzaSy...",
   databaseURL: "https://ipponsystem-245b4-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -98,7 +93,7 @@ let IPPON_THRESHOLD = 5;
 let FRAME_THICKNESS = 40;
 let lastValue = 0;
 
-/* 設定読み込み */
+/* 設定 */
 onValue(settingsRef, snap=>{
   const d = snap.val();
   if(d?.threshold) IPPON_THRESHOLD = Number(d.threshold);
@@ -113,13 +108,33 @@ navigator.mediaDevices.getUserMedia({ video: true })
 const ctx = new (window.AudioContext || window.webkitAudioContext)();
 document.body.addEventListener("click", ()=>ctx.resume(), {once:true});
 
+/* ピコ音 */
 function tone(f){
   const o = ctx.createOscillator();
   const g = ctx.createGain();
   o.frequency.value = f;
   g.gain.value = 0.25;
   o.connect(g); g.connect(ctx.destination);
-  o.start(); o.stop(ctx.currentTime+0.2);
+  o.start(); o.stop(ctx.currentTime+0.15);
+}
+
+/* ドゥーン音（追加🔥） */
+function ipponSound(){
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+
+  o.type = "sine";
+  o.frequency.setValueAtTime(120, ctx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.6);
+
+  g.gain.setValueAtTime(0.4, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+
+  o.connect(g);
+  g.connect(ctx.destination);
+
+  o.start();
+  o.stop(ctx.currentTime + 0.6);
 }
 
 /* 八角形 */
@@ -178,6 +193,7 @@ onValue(voteRef, snap=>{
 
   if(v >= IPPON_THRESHOLD){
     ipponWrapper.style.display = "block";
+    ipponSound(); // ←ここが追加🔥
 
     setTimeout(()=>{
       ipponWrapper.style.display = "none";
